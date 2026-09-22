@@ -4,6 +4,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.login.LoginForm;
+import com.vaadin.flow.component.login.LoginI18n;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
@@ -25,6 +26,9 @@ public class LoginView extends VerticalLayout {
         loginForm.setAction("login");
         loginForm.setForgotPasswordButtonVisible(true);
         loginForm.addForgotPasswordListener(event -> UI.getCurrent().navigate(ForgotPasswordView.class));
+        LoginI18n loginI18n = LoginI18n.createDefault();
+        loginI18n.getForm().setUsername("Email");
+        loginForm.setI18n(loginI18n);
 
         Checkbox rememberMe = new Checkbox("Remember me");
         rememberMe.setId("remember-me");

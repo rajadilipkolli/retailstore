@@ -3,6 +3,7 @@ package com.example.stock.security;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -44,7 +45,10 @@ public class ResetPasswordView extends VerticalLayout implements BeforeEnterObse
             UI.getCurrent().navigate(LoginView.class);
         });
 
-        add(new H2("Choose a new password"), password, confirmation, submit);
+        Div panel = new Div();
+        panel.addClassName("auth-panel");
+        panel.add(new H2("Choose a new password"), password, confirmation, submit);
+        add(panel);
     }
 
     @Override

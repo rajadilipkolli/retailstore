@@ -6,6 +6,7 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.EmailField;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 
@@ -30,6 +31,10 @@ public class ForgotPasswordView extends VerticalLayout {
         });
         submit.addClassName("primary-action");
 
-        add(new H2("Reset your password"), new Paragraph("Enter your email and we will send a reset link if an account exists."), email, submit);
+        Div panel = new Div();
+        panel.addClassName("auth-panel");
+        panel.add(new H2("Reset your password"),
+            new Paragraph("Enter your email and we will send a reset link if an account exists."), email, submit);
+        add(panel);
     }
 }

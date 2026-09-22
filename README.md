@@ -60,7 +60,7 @@ Visual verification uses Playwright and is separate from the Maven dependencies.
 
 ```bash
 npm install --save-dev playwright
-npx playwright install chromium
+npx playwright install --with-deps chromium
 ```
 
 Then start the application with `mvn spring-boot:run` and run the Playwright checks against `http://localhost:8080`.
