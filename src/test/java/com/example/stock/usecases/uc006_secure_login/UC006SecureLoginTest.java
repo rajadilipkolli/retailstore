@@ -17,6 +17,8 @@ import java.util.Set;
 
 import com.example.stock.security.AccountService;
 import com.example.stock.security.EmailSender;
+import com.example.stock.security.UserAccount;
+import com.example.stock.security.UserAccountRepository;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -42,6 +44,7 @@ class UC006SecureLoginTest {
 
     @DynamicPropertySource
     static void mailpitProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", () -> "jdbc:h2:mem:secure_login_test;DB_CLOSE_DELAY=-1");
         registry.add("spring.mail.host", mailpit::getHost);
         registry.add("spring.mail.port", () -> mailpit.getMappedPort(1025));
         registry.add("app.mail.reset-url", () -> "http://localhost:8080/reset-password");
@@ -52,6 +55,9 @@ class UC006SecureLoginTest {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private UserAccountRepository accountRepository;
 
     @Test
     void mainFlow_unauthenticatedUserIsRedirectedToLogin() throws Exception {
@@ -124,7 +130,7 @@ class UC006SecureLoginTest {
         EmailSender failingEmailSender = (recipient, resetUrl) -> {
             throw new IllegalStateException("Mailpit unavailable");
         };
-        AccountService service = new AccountService(new BCryptPasswordEncoder(), failingEmailSender,
+        AccountService service = new AccountService(new BCryptPasswordEncoder(), failingEmailSender, accountRepository,
                 "http://localhost:8080/reset-password");
 
         assertThat(service.requestPasswordReset("manager@example.com"))
@@ -166,9 +172,25 @@ class UC006SecureLoginTest {
     void br02_nonOnboardedAccountsCannotAuthenticate() {
         accountService.register("pending@example.com", "password", Set.of("WAREHOUSE_STAFF"));
 
+        assertThat(accountRepository.findByEmail("pending@example.com"))
+            .isPresent()
+            .get()
+            .extracting(UserAccount::isOnboarded)
+            .isEqualTo(false);
         assertThatThrownBy(() -> accountService.loadUserByUsername("pending@example.com"))
                 .isInstanceOf(UsernameNotFoundException.class);
     }
+
+            @Test
+            void br02_registrationPersistsPendingAccountUntilOnboarding() {
+            assertThat(accountService.register("new-user@example.com", "password", Set.of("WAREHOUSE_STAFF")))
+                .isTrue();
+            assertThat(accountRepository.findByEmail("new-user@example.com"))
+                .isPresent()
+                .get()
+                .extracting(UserAccount::isOnboarded)
+                .isEqualTo(false);
+            }
 
     @Test
     void br05_passwordResetRequiresAtLeastEightCharacters() {

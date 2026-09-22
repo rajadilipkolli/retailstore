@@ -12,6 +12,7 @@
 | Supplier        | id, name, contactPerson, email, phone, address, notes           | Has many Products (through ProductSupplier)                                          |
 | ProductSupplier | id, productId, supplierId, supplierSku, leadTimeDays            | Links Product to Supplier                                                            |
 | LowStockAlert   | id, productId, alertedAt, acknowledged                          | Triggered when Stock.quantityOnHand <= Product.reorderLevel                          |
+| UserAccount     | id, email, passwordHash, roles, onboarded                        | Authenticates application users; email is unique                                      |
 
 ## Relationships
 
@@ -20,6 +21,7 @@
 - **Product** has **many Suppliers** through the ProductSupplier junction table
 - **Supplier** has **many Products** through the ProductSupplier junction table
 - **LowStockAlert** references a Product and persists until acknowledged
+- **UserAccount** stores registered users in the `user_accounts` table. A user remains unavailable to Spring Security until `onboarded` is true.
 
 ## Key Attributes
 
@@ -53,3 +55,15 @@
 ### LowStockAlert
 - `alertedAt`: Timestamp when alert was generated
 - `acknowledged`: Whether the alert has been reviewed by a user
+
+### UserAccount
+- `email`: Unique, normalized login identity
+- `passwordHash`: BCrypt password hash; raw passwords are never persisted
+- `roles`: Comma-separated role values used to create Spring Security authorities
+- `onboarded`: Whether an administrator has approved the account for authentication
+
+## Persistence
+
+- User accounts are persisted in the file-backed H2 database table `user_accounts`.
+- JPA creates or updates the table from `UserAccount`; the unique email constraint prevents duplicate identities.
+- Spring Security calls `AccountService.loadUserByUsername`, which reads the matching `user_accounts` row and rejects rows where `onboarded` is false.

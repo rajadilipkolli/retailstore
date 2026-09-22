@@ -22,7 +22,7 @@ public class SecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/forgot-password", "/reset-password", "/styles.css").permitAll()
+                .requestMatchers("/login", "/register", "/forgot-password", "/reset-password", "/styles.css").permitAll()
                 .requestMatchers("/home").authenticated())
                 .formLogin(form -> form.loginPage("/login").defaultSuccessUrl("/home", true).permitAll())
                 .rememberMe(remember -> remember.rememberMeParameter("remember-me"))

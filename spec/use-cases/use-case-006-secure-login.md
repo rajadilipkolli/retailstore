@@ -15,6 +15,7 @@
 ## Preconditions
 
 - The user may register, but an administrator must onboard or approve the account before authentication succeeds.
+- Registration stores the account in the `user_accounts` table with `onboarded=false`.
 - The user does not need an existing authenticated session to begin the flow.
 
 ## Trigger
@@ -42,6 +43,13 @@
 - **Condition:** The email or password is invalid, or the account is not eligible for authentication.
 - **Flow:** System displays the standard authentication error and keeps the user on `/login` without creating an authenticated session.
 - **Outcome:** The user may correct the credentials and retry.
+
+### Register account
+
+- **Branches from:** Login entry point
+- **Condition:** The user does not yet have an account.
+- **Flow:** User navigates to `/register`, enters a unique email and compliant password, and submits the form. The system persists the account in `user_accounts` with `onboarded=false` and confirms that administrator approval is required.
+- **Outcome:** The account cannot authenticate until an administrator onboards it.
 
 ### Request password reset
 
@@ -107,6 +115,7 @@
 |----|------|
 | BR-01 | Email is the unique account identity and login value. |
 | BR-02 | Only administrator-onboarded accounts may authenticate. |
+| BR-02a | Registration persists a pending `UserAccount` row with `onboarded=false`; administrator onboarding changes it to true. |
 | BR-03 | Remember me controls session persistence. |
 | BR-04 | Password reset links are single-use and time-limited. |
 | BR-05 | New passwords must satisfy the standard password policy, and confirmation must match. |
@@ -117,6 +126,7 @@
 ## Acceptance Criteria
 
 - [ ] Authenticated users can access `/home` and unauthenticated users are redirected to `/login` from protected routes.
+- [ ] Users can register at `/register`, and the new account is saved pending administrator onboarding.
 - [ ] The responsive Vaadin `LoginForm` accepts email, password, Remember me, Login, and Forgot password interactions.
 - [ ] Valid credentials authenticate through Spring Security and redirect the user to `/home`.
 - [ ] Invalid credentials show a standard authentication error and do not create a session.
@@ -148,6 +158,7 @@ Use the standard responsive Vaadin `LoginForm`. The login view must provide emai
 | Route | Access | Notes |
 |-------|--------|-------|
 | `/login` | public | Vaadin `LoginForm`; entry point for unauthenticated users. |
+| `/register` | public | Creates a pending `user_accounts` row; approval is required before login. |
 | `/forgot-password` | public | Accepts an email and returns a neutral recovery response. |
 | `/reset-password` | public | Accepts a valid reset token and a new password. |
 | `/home` | authenticated | Destination after successful authentication for all three roles. |
