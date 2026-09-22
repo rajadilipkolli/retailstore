@@ -2,7 +2,7 @@
 
 **As an** application user, **I want to** sign in securely **so that** I can access inventory features according to my role.
 
-**Status:** Pending
+**Status:** Implemented
 **Date:** 2026-09-22
 
 > A use case cannot be marked as **Implemented** unless all criteria in the `/implement-use-case` skill are fulfilled.
