@@ -64,6 +64,6 @@
 
 ## Persistence
 
-- User accounts are persisted in the file-backed H2 database table `user_accounts`.
+- User accounts are persisted in the PostgreSQL table `user_accounts`.
 - JPA creates or updates the table from `UserAccount`; the unique email constraint prevents duplicate identities.
 - Spring Security calls `AccountService.loadUserByUsername`, which reads the matching `user_accounts` row and rejects rows where `onboarded` is false.

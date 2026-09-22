@@ -26,8 +26,10 @@ import com.example.stock.security.UserAccountRepository;
 
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,12 +45,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 class UC006SecureLoginTest {
 
     @Container
+    @ServiceConnection
+    private static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine");
+
+    @Container
     private static final GenericContainer<?> mailpit = new GenericContainer<>("axllent/mailpit:v1.21.8")
             .withExposedPorts(1025, 8025);
 
     @DynamicPropertySource
     static void mailpitProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> "jdbc:h2:mem:secure_login_test;DB_CLOSE_DELAY=-1");
         registry.add("spring.mail.host", mailpit::getHost);
         registry.add("spring.mail.port", () -> mailpit.getMappedPort(1025));
         registry.add("app.mail.reset-url", () -> "http://localhost:8080/reset-password");
