@@ -1,0 +1,1 @@
+An inventory management system with stock tracking, product catalog, supplier management, and low-stock alerts.
