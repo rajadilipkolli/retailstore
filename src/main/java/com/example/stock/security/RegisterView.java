@@ -15,6 +15,11 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 @AnonymousAllowed
 public class RegisterView extends VerticalLayout {
 
+    /**
+     * Creates the pending-account registration form.
+     *
+     * @param accountService account service that registers submitted accounts
+     */
     public RegisterView(AccountService accountService) {
         addClassName("auth-view");
         setAlignItems(Alignment.CENTER);

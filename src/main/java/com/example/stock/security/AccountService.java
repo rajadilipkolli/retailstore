@@ -31,6 +31,15 @@ public class AccountService implements UserDetailsService {
     private final String resetUrl;
         private final Clock clock;
 
+    /**
+     * Creates the account service and seeds the built-in application accounts.
+     *
+     * @param passwordEncoder encoder used to store account passwords
+     * @param emailSender sender used to deliver password-reset links
+     * @param accountRepository persistent account store
+     * @param resetUrl base URL for password-reset links
+     * @param clock time source used to expire reset requests
+     */
     public AccountService(PasswordEncoder passwordEncoder, EmailSender emailSender,
             UserAccountRepository accountRepository,
             @org.springframework.beans.factory.annotation.Value("${app.mail.reset-url:http://localhost:8080/reset-password}") String resetUrl,
@@ -43,6 +52,13 @@ public class AccountService implements UserDetailsService {
         seedAccounts();
     }
 
+    /**
+     * Creates or approves an account with the supplied credentials and roles.
+     *
+     * @param email account email address
+     * @param rawPassword unencoded account password
+     * @param roles roles granted to the account
+     */
     public void onboard(String email, String rawPassword, Set<String> roles) {
         String normalizedEmail = normalize(email);
         UserAccount account = accountRepository.findByEmail(normalizedEmail)
@@ -51,6 +67,14 @@ public class AccountService implements UserDetailsService {
         accountRepository.save(account);
     }
 
+    /**
+     * Registers an account that remains disabled until onboarding.
+     *
+     * @param email account email address
+     * @param rawPassword unencoded account password
+     * @param roles requested account roles
+     * @return {@code true} when the account was created, or {@code false} when the email already exists
+     */
     public boolean register(String email, String rawPassword, Set<String> roles) {
         String normalizedEmail = normalize(email);
         if (accountRepository.findByEmail(normalizedEmail).isPresent()) {
@@ -60,6 +84,13 @@ public class AccountService implements UserDetailsService {
         return true;
     }
 
+    /**
+     * Loads an onboarded account for Spring Security authentication.
+     *
+     * @param email account email address
+     * @return security details for the onboarded account
+     * @throws UsernameNotFoundException when the account is missing or has not been onboarded
+     */
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         UserAccount account = accountRepository.findByEmail(normalize(email)).orElse(null);
@@ -72,6 +103,12 @@ public class AccountService implements UserDetailsService {
                 .build();
     }
 
+    /**
+     * Sends a single-use password-reset link for an onboarded account.
+     *
+     * @param email account email address
+     * @return a neutral response that does not reveal whether the account exists
+     */
     public String requestPasswordReset(String email) {
         String normalizedEmail = normalize(email);
         if (accountRepository.findByEmail(normalizedEmail).filter(UserAccount::isOnboarded).isPresent()) {
@@ -87,6 +124,13 @@ public class AccountService implements UserDetailsService {
         return "If an account exists for that email, a reset link has been sent.";
     }
 
+    /**
+     * Replaces an account password when the reset token is valid and unexpired.
+     *
+     * @param token single-use reset token
+     * @param newPassword replacement password
+     * @return {@code true} when the password was changed
+     */
     public boolean resetPassword(String token, String newPassword) {
         if (newPassword == null || newPassword.length() < 8) {
             return false;
@@ -104,6 +148,12 @@ public class AccountService implements UserDetailsService {
         return true;
     }
 
+    /**
+     * Finds a pending reset token for an account.
+     *
+     * @param email account email address
+     * @return a pending token, when one exists
+     */
     public Optional<String> latestResetTokenFor(String email) {
         String normalizedEmail = normalize(email);
         return resetRequests.entrySet().stream()
@@ -112,10 +162,19 @@ public class AccountService implements UserDetailsService {
                 .findFirst();
     }
 
+    /**
+     * Normalizes an email address for identity comparisons.
+     *
+     * @param email email address to normalize
+     * @return the trimmed, lowercase address, or an empty string for {@code null}
+     */
     private String normalize(String email) {
         return email == null ? "" : email.trim().toLowerCase();
     }
 
+    /**
+     * Ensures the built-in demonstration accounts are onboarded.
+     */
     private void seedAccounts() {
         onboard("manager@example.com", "password", Set.of("INVENTORY_MANAGER"));
         onboard("warehouse@example.com", "password", Set.of("WAREHOUSE_STAFF"));

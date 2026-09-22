@@ -16,16 +16,33 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfiguration {
 
+    /**
+     * Provides the password encoder used for stored account credentials.
+     *
+     * @return a BCrypt password encoder
+     */
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Provides the time source used by expiring security operations.
+     *
+     * @return the system clock in UTC
+     */
     @Bean
     Clock clock() {
         return Clock.systemUTC();
     }
 
+    /**
+     * Configures public authentication routes and protected application routes.
+     *
+     * @param http Spring Security HTTP configuration
+     * @return the configured security filter chain
+     * @throws Exception when the security configuration cannot be built
+     */
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth

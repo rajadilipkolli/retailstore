@@ -19,6 +19,11 @@ public class ResetPasswordView extends VerticalLayout implements BeforeEnterObse
     private final AccountService accountService;
     private String token;
 
+    /**
+     * Creates the form used to replace a password from a reset link.
+     *
+     * @param accountService account service that validates reset requests
+     */
     public ResetPasswordView(AccountService accountService) {
         this.accountService = accountService;
         addClassName("auth-view");
@@ -51,6 +56,11 @@ public class ResetPasswordView extends VerticalLayout implements BeforeEnterObse
         add(panel);
     }
 
+    /**
+     * Captures the reset token from the route query parameters.
+     *
+     * @param event navigation event containing the reset link parameters
+     */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         token = event.getLocation().getQueryParameters().getParameters().getOrDefault("token", java.util.List.of(""))

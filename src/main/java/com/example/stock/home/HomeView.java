@@ -11,6 +11,9 @@ import jakarta.annotation.security.PermitAll;
 @PermitAll
 public class HomeView extends VerticalLayout {
 
+    /**
+     * Creates the authenticated inventory landing page.
+     */
     public HomeView() {
         addClassName("home-view");
         add(new H1("Inventory home"), new Paragraph("You are signed in and ready to manage inventory."));

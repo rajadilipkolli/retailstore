@@ -13,6 +13,9 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 @AnonymousAllowed
 public class LoginView extends VerticalLayout {
 
+    /**
+     * Creates the login form and its password-recovery navigation.
+     */
     public LoginView() {
         addClassName("login-view");
         setAlignItems(Alignment.CENTER);

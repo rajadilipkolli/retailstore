@@ -14,6 +14,11 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 @AnonymousAllowed
 public class ForgotPasswordView extends VerticalLayout {
 
+    /**
+     * Creates the password-reset request form.
+     *
+     * @param accountService account service that creates reset requests
+     */
     public ForgotPasswordView(AccountService accountService) {
         addClassName("auth-view");
         setAlignItems(Alignment.CENTER);
