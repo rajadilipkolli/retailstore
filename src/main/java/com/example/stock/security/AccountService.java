@@ -2,6 +2,7 @@ package com.example.stock.security;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.Clock;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -28,14 +29,17 @@ public class AccountService implements UserDetailsService {
     private final EmailSender emailSender;
     private final UserAccountRepository accountRepository;
     private final String resetUrl;
+        private final Clock clock;
 
     public AccountService(PasswordEncoder passwordEncoder, EmailSender emailSender,
             UserAccountRepository accountRepository,
-            @org.springframework.beans.factory.annotation.Value("${app.mail.reset-url:http://localhost:8080/reset-password}") String resetUrl) {
+            @org.springframework.beans.factory.annotation.Value("${app.mail.reset-url:http://localhost:8080/reset-password}") String resetUrl,
+            Clock clock) {
         this.passwordEncoder = passwordEncoder;
         this.emailSender = emailSender;
         this.accountRepository = accountRepository;
         this.resetUrl = resetUrl;
+        this.clock = clock;
         seedAccounts();
     }
 
@@ -72,7 +76,7 @@ public class AccountService implements UserDetailsService {
         String normalizedEmail = normalize(email);
         if (accountRepository.findByEmail(normalizedEmail).filter(UserAccount::isOnboarded).isPresent()) {
             String token = UUID.randomUUID().toString();
-            resetRequests.put(token, new ResetRequest(normalizedEmail, Instant.now().plus(RESET_TOKEN_LIFETIME)));
+            resetRequests.put(token, new ResetRequest(normalizedEmail, Instant.now(clock).plus(RESET_TOKEN_LIFETIME)));
             try {
                 emailSender.sendPasswordReset(normalizedEmail, resetUrl + "?token=" + token);
             } catch (RuntimeException exception) {
@@ -88,7 +92,7 @@ public class AccountService implements UserDetailsService {
             return false;
         }
         ResetRequest request = resetRequests.remove(token);
-        if (request == null || request.expiresAt().isBefore(Instant.now())) {
+        if (request == null || request.expiresAt().isBefore(Instant.now(clock))) {
             return false;
         }
         UserAccount account = accountRepository.findByEmail(request.email()).orElse(null);

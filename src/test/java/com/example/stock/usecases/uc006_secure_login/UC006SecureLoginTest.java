@@ -13,6 +13,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Set;
 
 import com.example.stock.security.AccountService;
@@ -131,7 +135,7 @@ class UC006SecureLoginTest {
             throw new IllegalStateException("Mailpit unavailable");
         };
         AccountService service = new AccountService(new BCryptPasswordEncoder(), failingEmailSender, accountRepository,
-                "http://localhost:8080/reset-password");
+            "http://localhost:8080/reset-password", Clock.systemUTC());
 
         assertThat(service.requestPasswordReset("manager@example.com"))
                 .isEqualTo("If an account exists for that email, a reset link has been sent.");
@@ -153,6 +157,19 @@ class UC006SecureLoginTest {
     }
 
     @Test
+    void af4_expiredResetTokenDoesNotChangePassword() {
+        MutableClock clock = new MutableClock(Instant.parse("2026-09-22T20:00:00Z"));
+        AccountService service = new AccountService(new BCryptPasswordEncoder(), (recipient, resetUrl) -> {
+        }, accountRepository, "http://localhost:8080/reset-password", clock);
+        service.requestPasswordReset("manager@example.com");
+        String token = service.latestResetTokenFor("manager@example.com").orElseThrow();
+
+        clock.advance(Duration.ofMinutes(31));
+
+        assertThat(service.resetPassword(token, "new-password")).isFalse();
+    }
+
+    @Test
     void af5_invalidNewPasswordIsRejected() {
         accountService.requestPasswordReset("manager@example.com");
         String token = accountService.latestResetTokenFor("manager@example.com").orElseThrow();
@@ -169,6 +186,12 @@ class UC006SecureLoginTest {
     }
 
     @Test
+    void br01_duplicateEmailRegistrationIsRejected() {
+        assertThat(accountService.register("manager@example.com", "password", Set.of("WAREHOUSE_STAFF")))
+                .isFalse();
+    }
+
+    @Test
     void br02_nonOnboardedAccountsCannotAuthenticate() {
         accountService.register("pending@example.com", "password", Set.of("WAREHOUSE_STAFF"));
 
@@ -181,16 +204,36 @@ class UC006SecureLoginTest {
                 .isInstanceOf(UsernameNotFoundException.class);
     }
 
-            @Test
-            void br02_registrationPersistsPendingAccountUntilOnboarding() {
-            assertThat(accountService.register("new-user@example.com", "password", Set.of("WAREHOUSE_STAFF")))
+    @Test
+    void br02_registrationPersistsPendingAccountUntilOnboarding() {
+        assertThat(accountService.register("new-user@example.com", "password", Set.of("WAREHOUSE_STAFF")))
                 .isTrue();
-            assertThat(accountRepository.findByEmail("new-user@example.com"))
+        assertThat(accountRepository.findByEmail("new-user@example.com"))
                 .isPresent()
                 .get()
                 .extracting(UserAccount::isOnboarded)
                 .isEqualTo(false);
-            }
+    }
+
+    @Test
+    void br02_adminOnboardingEnablesAuthentication() {
+        accountService.register("approved@example.com", "password", Set.of("WAREHOUSE_STAFF"));
+
+        accountService.onboard("approved@example.com", "password", Set.of("WAREHOUSE_STAFF"));
+
+        assertThat(accountService.loadUserByUsername("approved@example.com").getUsername())
+                .isEqualTo("approved@example.com");
+    }
+
+    @Test
+    void af3_successfulResetChangesPassword() {
+        accountService.requestPasswordReset("manager@example.com");
+        String token = accountService.latestResetTokenFor("manager@example.com").orElseThrow();
+
+        assertThat(accountService.resetPassword(token, "updated-password")).isTrue();
+        assertThat(accountService.loadUserByUsername("manager@example.com").getPassword())
+                .isNotEqualTo("password");
+    }
 
     @Test
     void br05_passwordResetRequiresAtLeastEightCharacters() {
@@ -198,5 +241,33 @@ class UC006SecureLoginTest {
         String token = accountService.latestResetTokenFor("manager@example.com").orElseThrow();
 
         assertThat(accountService.resetPassword(token, "1234567")).isFalse();
+    }
+
+    private static final class MutableClock extends Clock {
+
+        private Instant current;
+
+        private MutableClock(Instant current) {
+            this.current = current;
+        }
+
+        private void advance(Duration duration) {
+            current = current.plus(duration);
+        }
+
+        @Override
+        public ZoneOffset getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(java.time.ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return current;
+        }
     }
 }

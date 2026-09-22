@@ -148,6 +148,8 @@
 - [ ] Verify Mailpit receives the reset email with the recipient, subject, and reset link.
 - [ ] Verify email delivery failure handling.
 - [ ] Verify successful password reset, single-use reset links, invalid or expired links, and standard password validation errors.
+- [ ] Verify successful password changes update authentication, expired links are rejected, and reset tokens cannot be reused.
+- [ ] Verify duplicate email registration is rejected and administrator onboarding enables authentication.
 - [ ] Verify each business rule BR-01 through BR-06.
 - [ ] Verify business rules BR-07 and BR-08.
 

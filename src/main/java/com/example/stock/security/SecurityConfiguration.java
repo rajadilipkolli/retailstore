@@ -1,5 +1,7 @@
 package com.example.stock.security;
 
+import java.time.Clock;
+
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 
 import org.springframework.context.annotation.Bean;
@@ -17,6 +19,11 @@ public class SecurityConfiguration {
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    Clock clock() {
+        return Clock.systemUTC();
     }
 
     @Bean
