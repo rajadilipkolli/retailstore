@@ -30,7 +30,7 @@ public class ForgotPasswordView extends VerticalLayout {
         email.setWidthFull();
 
         Button submit = new Button("Send reset link", event -> {
-            if (email.isEmpty() || !email.isInvalid()) {
+            if (!email.isEmpty() && !email.isInvalid()) {
                 Notification.show(accountService.requestPasswordReset(email.getValue()));
             }
         });

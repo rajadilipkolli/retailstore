@@ -25,6 +25,7 @@ import com.example.stock.security.UserAccount;
 import com.example.stock.security.UserAccountRepository;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -32,6 +33,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -42,6 +44,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
+@ActiveProfiles("test")
 class UC006SecureLoginTest {
 
     @Container
@@ -67,6 +70,11 @@ class UC006SecureLoginTest {
 
     @Autowired
     private UserAccountRepository accountRepository;
+
+    @BeforeEach
+    void onboardTestManager() {
+        accountService.onboard("manager@example.com", "password", Set.of("INVENTORY_MANAGER"));
+    }
 
     @Test
     void mainFlow_unauthenticatedUserIsRedirectedToLogin() throws Exception {
@@ -149,8 +157,10 @@ class UC006SecureLoginTest {
 
     @Test
     void af3_resetPasswordInvalidatesTokenAfterUse() {
-        accountService.requestPasswordReset("manager@example.com");
-        String token = accountService.latestResetTokenFor("manager@example.com").orElseThrow();
+        String resetAccount = "single-use-reset@example.com";
+        accountService.onboard(resetAccount, "password", Set.of("WAREHOUSE_STAFF"));
+        accountService.requestPasswordReset(resetAccount);
+        String token = accountService.latestResetTokenFor(resetAccount).orElseThrow();
 
         assertThat(accountService.resetPassword(token, "new-password")).isTrue();
         assertThat(accountService.resetPassword(token, "another-password")).isFalse();
@@ -232,11 +242,13 @@ class UC006SecureLoginTest {
 
     @Test
     void af3_successfulResetChangesPassword() {
-        accountService.requestPasswordReset("manager@example.com");
-        String token = accountService.latestResetTokenFor("manager@example.com").orElseThrow();
+        String resetAccount = "successful-reset@example.com";
+        accountService.onboard(resetAccount, "password", Set.of("WAREHOUSE_STAFF"));
+        accountService.requestPasswordReset(resetAccount);
+        String token = accountService.latestResetTokenFor(resetAccount).orElseThrow();
 
         assertThat(accountService.resetPassword(token, "updated-password")).isTrue();
-        assertThat(accountService.loadUserByUsername("manager@example.com").getPassword())
+        assertThat(accountService.loadUserByUsername(resetAccount).getPassword())
                 .isNotEqualTo("password");
     }
 

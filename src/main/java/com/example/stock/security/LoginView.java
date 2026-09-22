@@ -6,12 +6,16 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.login.LoginForm;
 import com.vaadin.flow.component.login.LoginI18n;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 
 @Route("login")
 @AnonymousAllowed
-public class LoginView extends VerticalLayout {
+public class LoginView extends VerticalLayout implements BeforeEnterObserver {
+
+    private final LoginForm loginForm;
 
     /**
      * Creates the login form and its password-recovery navigation.
@@ -25,7 +29,7 @@ public class LoginView extends VerticalLayout {
         Div panel = new Div();
         panel.addClassName("login-panel");
 
-        LoginForm loginForm = new LoginForm();
+        loginForm = new LoginForm();
         loginForm.setAction("login");
         loginForm.setForgotPasswordButtonVisible(true);
         loginForm.addForgotPasswordListener(event -> UI.getCurrent().navigate(ForgotPasswordView.class));
@@ -35,8 +39,18 @@ public class LoginView extends VerticalLayout {
 
         Checkbox rememberMe = new Checkbox("Remember me");
         rememberMe.setId("remember-me");
+        rememberMe.getElement().setAttribute("name", "remember-me");
+        rememberMe.getElement().setAttribute("slot", "custom-form-area");
+        loginForm.getElement().appendChild(rememberMe.getElement());
 
-        panel.add(loginForm, rememberMe);
+        panel.add(loginForm);
         add(panel);
+    }
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (event.getLocation().getQueryParameters().getParameters().containsKey("error")) {
+            loginForm.setError(true);
+        }
     }
 }

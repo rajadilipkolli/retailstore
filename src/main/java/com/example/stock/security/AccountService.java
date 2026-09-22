@@ -3,6 +3,7 @@ package com.example.stock.security;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.Clock;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -29,10 +30,10 @@ public class AccountService implements UserDetailsService {
     private final EmailSender emailSender;
     private final UserAccountRepository accountRepository;
     private final String resetUrl;
-        private final Clock clock;
+    private final Clock clock;
 
     /**
-     * Creates the account service and seeds the built-in application accounts.
+     * Creates the account service backed by the persistent account store.
      *
      * @param passwordEncoder encoder used to store account passwords
      * @param emailSender sender used to deliver password-reset links
@@ -49,7 +50,6 @@ public class AccountService implements UserDetailsService {
         this.accountRepository = accountRepository;
         this.resetUrl = resetUrl;
         this.clock = clock;
-        seedAccounts();
     }
 
     /**
@@ -169,16 +169,7 @@ public class AccountService implements UserDetailsService {
      * @return the trimmed, lowercase address, or an empty string for {@code null}
      */
     private String normalize(String email) {
-        return email == null ? "" : email.trim().toLowerCase();
-    }
-
-    /**
-     * Ensures the built-in demonstration accounts are onboarded.
-     */
-    private void seedAccounts() {
-        onboard("manager@example.com", "password", Set.of("INVENTORY_MANAGER"));
-        onboard("warehouse@example.com", "password", Set.of("WAREHOUSE_STAFF"));
-        onboard("purchasing@example.com", "password", Set.of("PURCHASING_MANAGER"));
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
     }
 
     private record ResetRequest(String email, Instant expiresAt) {

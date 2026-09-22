@@ -48,10 +48,11 @@ public class SecurityConfiguration {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/register", "/forgot-password", "/reset-password", "/styles.css").permitAll()
                 .requestMatchers("/home").authenticated())
-                .formLogin(form -> form.loginPage("/login").defaultSuccessUrl("/home", true).permitAll())
                 .rememberMe(remember -> remember.rememberMeParameter("remember-me"))
                 .logout(logout -> logout.logoutSuccessUrl("/login"));
         http.with(VaadinSecurityConfigurer.vaadin(), configurer -> {
+            configurer.loginView(LoginView.class)
+                    .defaultSuccessUrl("/home", true);
         });
         return http.build();
     }
