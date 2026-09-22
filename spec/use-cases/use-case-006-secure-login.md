@@ -10,7 +10,7 @@
 ## Actors
 
 - **Primary actors:** Inventory Manager, Warehouse Staff, and Purchasing Manager
-- **Secondary actors:** Spring Security authentication provider and email delivery service for password recovery
+- **Secondary actors:** Spring Security authentication provider, SMTP email delivery service, and Mailpit for test email capture
 
 ## Preconditions
 
@@ -52,8 +52,15 @@
   2. System navigates to `/forgot-password`.
   3. User enters their email.
   4. System checks the email and returns a neutral response that does not reveal whether an account exists.
-  5. If the email belongs to an account, the system sends a single-use, time-limited reset link.
+  5. If the email belongs to an account, the system sends an email containing a single-use, time-limited reset link.
 - **Outcome:** The user can follow the reset link when it is received.
+
+### Password reset email delivery failure
+
+- **Branches from:** Request password reset step 5
+- **Condition:** The email delivery service cannot accept the reset email.
+- **Flow:** System keeps the account and password unchanged, records the delivery failure, and returns the same neutral recovery response without revealing whether the email exists.
+- **Outcome:** The user must request a new reset link after email delivery is available.
 
 ### Complete password reset
 
@@ -104,6 +111,8 @@
 | BR-04 | Password reset links are single-use and time-limited. |
 | BR-05 | New passwords must satisfy the standard password policy, and confirmation must match. |
 | BR-06 | Password recovery responses must not reveal whether an email belongs to an account. |
+| BR-07 | A reset email is sent only for an existing onboarded account and contains the generated single-use reset link. |
+| BR-08 | Email delivery uses the configured SMTP service; tests capture delivery through Mailpit. |
 
 ## Acceptance Criteria
 
@@ -112,6 +121,8 @@
 - [ ] Valid credentials authenticate through Spring Security and redirect the user to `/home`.
 - [ ] Invalid credentials show a standard authentication error and do not create a session.
 - [ ] Password recovery uses a neutral response for both existing and unknown email addresses.
+- [ ] Known-account password recovery sends an email containing the generated reset link.
+- [ ] Email delivery failures do not change the password or reveal account existence.
 - [ ] Valid reset links allow a compliant password change and cannot be reused.
 - [ ] Invalid or expired reset links show an error and require a new reset request.
 - [ ] Invalid or mismatched new passwords show validation errors without changing the existing password.
@@ -124,8 +135,11 @@
 - [ ] Verify authenticated and unauthenticated routing, valid login, invalid credentials, and Remember me session behavior.
 - [ ] Verify the responsive login form controls and Forgot password navigation.
 - [ ] Verify neutral responses for known and unknown email addresses.
+- [ ] Verify Mailpit receives the reset email with the recipient, subject, and reset link.
+- [ ] Verify email delivery failure handling.
 - [ ] Verify successful password reset, single-use reset links, invalid or expired links, and standard password validation errors.
 - [ ] Verify each business rule BR-01 through BR-06.
+- [ ] Verify business rules BR-07 and BR-08.
 
 ## UI / Routes
 

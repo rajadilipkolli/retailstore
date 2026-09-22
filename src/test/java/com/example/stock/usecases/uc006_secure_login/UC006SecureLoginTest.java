@@ -9,20 +9,43 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Set;
 
 import com.example.stock.security.AccountService;
+import com.example.stock.security.EmailSender;
 
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Testcontainers
 class UC006SecureLoginTest {
+
+    @Container
+    private static final GenericContainer<?> mailpit = new GenericContainer<>("axllent/mailpit:v1.21.8")
+            .withExposedPorts(1025, 8025);
+
+    @DynamicPropertySource
+    static void mailpitProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.mail.host", mailpit::getHost);
+        registry.add("spring.mail.port", () -> mailpit.getMappedPort(1025));
+        registry.add("app.mail.reset-url", () -> "http://localhost:8080/reset-password");
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -80,6 +103,33 @@ class UC006SecureLoginTest {
         accountService.requestPasswordReset("manager@example.com");
 
         assertThat(accountService.latestResetTokenFor("manager@example.com")).isPresent();
+    }
+
+    @Test
+    void af2_passwordRecoverySendsResetEmailThroughMailpit() throws Exception {
+        accountService.requestPasswordReset("manager@example.com");
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://" + mailpit.getHost() + ":" + mailpit.getMappedPort(8025) + "/api/v1/messages"))
+                .GET()
+                .build();
+        String messages = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).body();
+
+        assertThat(messages).contains("manager@example.com", "Reset your Retail Store password",
+                "/reset-password?token=");
+    }
+
+    @Test
+    void af6_emailDeliveryFailureReturnsNeutralResponseAndInvalidatesToken() {
+        EmailSender failingEmailSender = (recipient, resetUrl) -> {
+            throw new IllegalStateException("Mailpit unavailable");
+        };
+        AccountService service = new AccountService(new BCryptPasswordEncoder(), failingEmailSender,
+                "http://localhost:8080/reset-password");
+
+        assertThat(service.requestPasswordReset("manager@example.com"))
+                .isEqualTo("If an account exists for that email, a reset link has been sent.");
+        assertThat(service.latestResetTokenFor("manager@example.com")).isEmpty();
     }
 
     @Test
