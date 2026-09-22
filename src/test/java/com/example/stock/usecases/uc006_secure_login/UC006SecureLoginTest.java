@@ -92,6 +92,19 @@ class UC006SecureLoginTest {
     }
 
     @Test
+    void af4_invalidResetTokenDoesNotChangePassword() {
+        assertThat(accountService.resetPassword("invalid-token", "new-password")).isFalse();
+    }
+
+    @Test
+    void af5_invalidNewPasswordIsRejected() {
+        accountService.requestPasswordReset("manager@example.com");
+        String token = accountService.latestResetTokenFor("manager@example.com").orElseThrow();
+
+        assertThat(accountService.resetPassword(token, "short")).isFalse();
+    }
+
+    @Test
     void br01_emailIsCaseInsensitiveIdentity() {
         accountService.onboard("Unique@Example.com", "password", Set.of("WAREHOUSE_STAFF"));
 
@@ -105,5 +118,13 @@ class UC006SecureLoginTest {
 
         assertThatThrownBy(() -> accountService.loadUserByUsername("pending@example.com"))
                 .isInstanceOf(UsernameNotFoundException.class);
+    }
+
+    @Test
+    void br05_passwordResetRequiresAtLeastEightCharacters() {
+        accountService.requestPasswordReset("manager@example.com");
+        String token = accountService.latestResetTokenFor("manager@example.com").orElseThrow();
+
+        assertThat(accountService.resetPassword(token, "1234567")).isFalse();
     }
 }

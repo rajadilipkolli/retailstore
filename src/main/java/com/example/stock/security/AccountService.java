@@ -65,6 +65,9 @@ public class AccountService implements UserDetailsService {
     }
 
     public boolean resetPassword(String token, String newPassword) {
+        if (newPassword == null || newPassword.length() < 8) {
+            return false;
+        }
         ResetRequest request = resetRequests.remove(token);
         if (request == null || request.expiresAt().isBefore(Instant.now())) {
             return false;
