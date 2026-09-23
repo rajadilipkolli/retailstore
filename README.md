@@ -54,6 +54,17 @@ Say you have three use cases: `use-case-001-browse-movies.md`, `use-case-002-buy
 
 After all three you have an application that does the three things you specified, with tests covering each, and a spec folder that explains why everything looks the way it does.
 
+## Visual Verification Prerequisite
+
+Visual verification uses Playwright and is separate from the Maven dependencies. Install it in the workspace with:
+
+```bash
+npm install --save-dev playwright
+npx playwright install --with-deps chromium
+```
+
+Then start the application with `mvn spring-boot:run` and run the Playwright checks against `http://localhost:8080`.
+
 ## More
 
 - [`spec/README.md`](spec/README.md) — full spec structure and workflow
