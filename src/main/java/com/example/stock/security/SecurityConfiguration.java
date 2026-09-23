@@ -1,9 +1,7 @@
 package com.example.stock.security;
 
-import java.time.Clock;
-
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
-
+import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -45,14 +43,15 @@ public class SecurityConfiguration {
      */
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/register", "/forgot-password", "/reset-password", "/styles.css").permitAll()
-                .requestMatchers("/home").authenticated())
+        http.authorizeHttpRequests(auth -> auth.requestMatchers(
+                                "/login", "/register", "/forgot-password", "/reset-password", "/styles.css")
+                        .permitAll()
+                        .requestMatchers("/home")
+                        .authenticated())
                 .rememberMe(remember -> remember.rememberMeParameter("remember-me"))
                 .logout(logout -> logout.logoutSuccessUrl("/login"));
         http.with(VaadinSecurityConfigurer.vaadin(), configurer -> {
-            configurer.loginView(LoginView.class)
-                    .defaultSuccessUrl("/home", true);
+            configurer.loginView(LoginView.class).defaultSuccessUrl("/home", true);
         });
         return http.build();
     }

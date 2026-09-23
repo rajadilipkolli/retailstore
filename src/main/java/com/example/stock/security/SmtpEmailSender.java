@@ -17,8 +17,8 @@ public class SmtpEmailSender implements EmailSender {
      * @param mailSender configured SMTP client
      * @param from sender address for reset messages
      */
-    public SmtpEmailSender(JavaMailSender mailSender,
-            @Value("${app.mail.from:no-reply@retailstore.local}") String from) {
+    public SmtpEmailSender(
+            JavaMailSender mailSender, @Value("${app.mail.from:no-reply@retailstore.local}") String from) {
         this.mailSender = mailSender;
         this.from = from;
     }
