@@ -13,6 +13,7 @@
         "patch",
         "pin"
       ],
+      "matchCurrentVersion": "!/^0\\./",
       "automerge": true
     }
   ]
