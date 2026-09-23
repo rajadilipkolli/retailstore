@@ -2,8 +2,8 @@ package com.example.stock.security;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -38,7 +38,9 @@ public class ResetPasswordView extends VerticalLayout implements BeforeEnterObse
         confirmation.setRequired(true);
 
         Button submit = new Button("Reset password", event -> {
-            if (password.isInvalid() || confirmation.isInvalid() || !password.getValue().equals(confirmation.getValue())) {
+            if (password.isInvalid()
+                    || confirmation.isInvalid()
+                    || !password.getValue().equals(confirmation.getValue())) {
                 confirmation.setErrorMessage("Passwords must match and meet the password policy.");
                 confirmation.setInvalid(true);
                 return;
@@ -63,7 +65,14 @@ public class ResetPasswordView extends VerticalLayout implements BeforeEnterObse
      */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        token = event.getLocation().getQueryParameters().getParameters().getOrDefault("token", java.util.List.of(""))
-                .stream().findFirst().orElse("");
+        token =
+                event
+                        .getLocation()
+                        .getQueryParameters()
+                        .getParameters()
+                        .getOrDefault("token", java.util.List.of(""))
+                        .stream()
+                        .findFirst()
+                        .orElse("");
     }
 }

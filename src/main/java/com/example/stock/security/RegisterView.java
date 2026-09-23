@@ -35,7 +35,9 @@ public class RegisterView extends VerticalLayout {
         confirmation.setRequired(true);
 
         Button submit = new Button("Create account", event -> {
-            if (email.isInvalid() || password.isInvalid() || confirmation.isInvalid()
+            if (email.isInvalid()
+                    || password.isInvalid()
+                    || confirmation.isInvalid()
                     || !password.getValue().equals(confirmation.getValue())) {
                 confirmation.setErrorMessage("Passwords must match and meet the password policy.");
                 confirmation.setInvalid(true);
@@ -51,9 +53,13 @@ public class RegisterView extends VerticalLayout {
 
         Div panel = new Div();
         panel.addClassName("auth-panel");
-        panel.add(new H2("Create an account"),
+        panel.add(
+                new H2("Create an account"),
                 new Paragraph("An administrator must approve your account before you can sign in."),
-                email, password, confirmation, submit);
+                email,
+                password,
+                confirmation,
+                submit);
         add(panel);
     }
 }

@@ -1,23 +1,22 @@
 package com.example.stock.security;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.Clock;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 public class AccountService implements UserDetailsService {
@@ -41,9 +40,13 @@ public class AccountService implements UserDetailsService {
      * @param resetUrl base URL for password-reset links
      * @param clock time source used to expire reset requests
      */
-    public AccountService(PasswordEncoder passwordEncoder, EmailSender emailSender,
+    public AccountService(
+            PasswordEncoder passwordEncoder,
+            EmailSender emailSender,
             UserAccountRepository accountRepository,
-            @org.springframework.beans.factory.annotation.Value("${app.mail.reset-url:http://localhost:8080/reset-password}") String resetUrl,
+            @org.springframework.beans.factory.annotation.Value(
+                            "${app.mail.reset-url:http://localhost:8080/reset-password}")
+                    String resetUrl,
             Clock clock) {
         this.passwordEncoder = passwordEncoder;
         this.emailSender = emailSender;
@@ -61,7 +64,8 @@ public class AccountService implements UserDetailsService {
      */
     public void onboard(String email, String rawPassword, Set<String> roles) {
         String normalizedEmail = normalize(email);
-        UserAccount account = accountRepository.findByEmail(normalizedEmail)
+        UserAccount account = accountRepository
+                .findByEmail(normalizedEmail)
                 .orElseGet(() -> new UserAccount(normalizedEmail, passwordEncoder.encode(rawPassword), roles, true));
         account.update(passwordEncoder.encode(rawPassword), roles, true);
         accountRepository.save(account);
@@ -98,8 +102,8 @@ public class AccountService implements UserDetailsService {
             throw new UsernameNotFoundException("Account not found");
         }
         return User.withUsername(account.getEmail())
-            .password(account.getPasswordHash())
-            .roles(account.getRoles().toArray(String[]::new))
+                .password(account.getPasswordHash())
+                .roles(account.getRoles().toArray(String[]::new))
                 .build();
     }
 
@@ -111,9 +115,13 @@ public class AccountService implements UserDetailsService {
      */
     public String requestPasswordReset(String email) {
         String normalizedEmail = normalize(email);
-        if (accountRepository.findByEmail(normalizedEmail).filter(UserAccount::isOnboarded).isPresent()) {
+        if (accountRepository
+                .findByEmail(normalizedEmail)
+                .filter(UserAccount::isOnboarded)
+                .isPresent()) {
             String token = UUID.randomUUID().toString();
-            resetRequests.put(token, new ResetRequest(normalizedEmail, Instant.now(clock).plus(RESET_TOKEN_LIFETIME)));
+            resetRequests.put(
+                    token, new ResetRequest(normalizedEmail, Instant.now(clock).plus(RESET_TOKEN_LIFETIME)));
             try {
                 emailSender.sendPasswordReset(normalizedEmail, resetUrl + "?token=" + token);
             } catch (RuntimeException exception) {
@@ -172,6 +180,5 @@ public class AccountService implements UserDetailsService {
         return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
     }
 
-    private record ResetRequest(String email, Instant expiresAt) {
-    }
+    private record ResetRequest(String email, Instant expiresAt) {}
 }

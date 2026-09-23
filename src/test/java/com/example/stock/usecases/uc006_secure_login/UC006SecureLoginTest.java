@@ -9,6 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.stock.security.AccountService;
+import com.example.stock.security.EmailSender;
+import com.example.stock.security.UserAccount;
+import com.example.stock.security.UserAccountRepository;
+import com.example.stock.usecases.BaseIT;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -18,52 +23,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Set;
-
-import com.example.stock.security.AccountService;
-import com.example.stock.security.EmailSender;
-import com.example.stock.security.UserAccount;
-import com.example.stock.security.UserAccountRepository;
-
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.ActiveProfiles;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers
-@ActiveProfiles("test")
-class UC006SecureLoginTest {
-
-    @Container
-    @ServiceConnection
-    private static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine");
-
-    @Container
-    private static final GenericContainer<?> mailpit = new GenericContainer<>("axllent/mailpit:v1.21.8")
-            .withExposedPorts(1025, 8025);
-
-    @DynamicPropertySource
-    static void mailpitProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.mail.host", mailpit::getHost);
-        registry.add("spring.mail.port", () -> mailpit.getMappedPort(1025));
-        registry.add("app.mail.reset-url", () -> "http://localhost:8080/reset-password");
-    }
-
-    @Autowired
-    private MockMvc mockMvc;
+class UC006SecureLoginTest extends BaseIT {
 
     @Autowired
     private AccountService accountService;
@@ -78,17 +44,15 @@ class UC006SecureLoginTest {
 
     @Test
     void mainFlow_unauthenticatedUserIsRedirectedToLogin() throws Exception {
-        mockMvc.perform(get("/home"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login"));
+        mockMvc.perform(get("/home")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/login"));
     }
 
     @Test
     void mainFlow_validOnboardedUserIsRedirectedToHome() throws Exception {
         mockMvc.perform(post("/login")
-                .param("username", "manager@example.com")
-                .param("password", "password")
-                .with(csrf()))
+                        .param("username", "manager@example.com")
+                        .param("password", "password")
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/home"));
     }
@@ -96,9 +60,9 @@ class UC006SecureLoginTest {
     @Test
     void af1_invalidCredentialsRemainUnauthenticated() throws Exception {
         mockMvc.perform(post("/login")
-                .param("username", "manager@example.com")
-                .param("password", "incorrect")
-                .with(csrf()))
+                        .param("username", "manager@example.com")
+                        .param("password", "incorrect")
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login?error"));
     }
@@ -106,10 +70,10 @@ class UC006SecureLoginTest {
     @Test
     void br03_rememberMeCreatesPersistentLoginCookie() throws Exception {
         mockMvc.perform(post("/login")
-                .param("username", "manager@example.com")
-                .param("password", "password")
-                .param("remember-me", "on")
-                .with(csrf()))
+                        .param("username", "manager@example.com")
+                        .param("password", "password")
+                        .param("remember-me", "on")
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(cookie().exists("remember-me"));
     }
@@ -133,13 +97,15 @@ class UC006SecureLoginTest {
         accountService.requestPasswordReset("manager@example.com");
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://" + mailpit.getHost() + ":" + mailpit.getMappedPort(8025) + "/api/v1/messages"))
+                .uri(URI.create(mailpit.getHttpUrl() + "/api/v1/messages"))
                 .GET()
                 .build();
-        String messages = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).body();
+        String messages = HttpClient.newHttpClient()
+                .send(request, HttpResponse.BodyHandlers.ofString())
+                .body();
 
-        assertThat(messages).contains("manager@example.com", "Reset your Retail Store password",
-                "/reset-password?token=");
+        assertThat(messages)
+                .contains("manager@example.com", "Reset your Retail Store password", "/reset-password?token=");
     }
 
     @Test
@@ -147,8 +113,12 @@ class UC006SecureLoginTest {
         EmailSender failingEmailSender = (recipient, resetUrl) -> {
             throw new IllegalStateException("Mailpit unavailable");
         };
-        AccountService service = new AccountService(new BCryptPasswordEncoder(), failingEmailSender, accountRepository,
-            "http://localhost:8080/reset-password", Clock.systemUTC());
+        AccountService service = new AccountService(
+                new BCryptPasswordEncoder(),
+                failingEmailSender,
+                accountRepository,
+                "http://localhost:8080/reset-password",
+                Clock.systemUTC());
 
         assertThat(service.requestPasswordReset("manager@example.com"))
                 .isEqualTo("If an account exists for that email, a reset link has been sent.");
@@ -168,14 +138,19 @@ class UC006SecureLoginTest {
 
     @Test
     void af4_invalidResetTokenDoesNotChangePassword() {
-        assertThat(accountService.resetPassword("invalid-token", "new-password")).isFalse();
+        assertThat(accountService.resetPassword("invalid-token", "new-password"))
+                .isFalse();
     }
 
     @Test
     void af4_expiredResetTokenDoesNotChangePassword() {
         MutableClock clock = new MutableClock(Instant.parse("2026-09-22T20:00:00Z"));
-        AccountService service = new AccountService(new BCryptPasswordEncoder(), (recipient, resetUrl) -> {
-        }, accountRepository, "http://localhost:8080/reset-password", clock);
+        AccountService service = new AccountService(
+                new BCryptPasswordEncoder(),
+                (recipient, resetUrl) -> {},
+                accountRepository,
+                "http://localhost:8080/reset-password",
+                clock);
         service.requestPasswordReset("manager@example.com");
         String token = service.latestResetTokenFor("manager@example.com").orElseThrow();
 
@@ -211,10 +186,10 @@ class UC006SecureLoginTest {
         accountService.register("pending@example.com", "password", Set.of("WAREHOUSE_STAFF"));
 
         assertThat(accountRepository.findByEmail("pending@example.com"))
-            .isPresent()
-            .get()
-            .extracting(UserAccount::isOnboarded)
-            .isEqualTo(false);
+                .isPresent()
+                .get()
+                .extracting(UserAccount::isOnboarded)
+                .isEqualTo(false);
         assertThatThrownBy(() -> accountService.loadUserByUsername("pending@example.com"))
                 .isInstanceOf(UsernameNotFoundException.class);
     }

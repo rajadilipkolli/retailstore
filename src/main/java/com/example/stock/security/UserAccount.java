@@ -1,15 +1,14 @@
 package com.example.stock.security;
 
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "user_accounts")
@@ -34,8 +33,7 @@ public class UserAccount {
     /**
      * Creates an empty entity for JPA.
      */
-    protected UserAccount() {
-    }
+    protected UserAccount() {}
 
     /**
      * Creates a persistent user account.
