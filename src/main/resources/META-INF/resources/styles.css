@@ -1,1 +1,58 @@
-/* Add your styles here */
+:root {
+	--auth-ink: #17221b;
+	--auth-muted: #5e6b62;
+	--auth-accent: #cc5a32;
+	--auth-surface: #fffaf1;
+	--auth-background: #e8efe7;
+}
+
+html, body {
+	background: var(--auth-background);
+}
+
+.login-view,
+.auth-view {
+	background: radial-gradient(circle at 20% 15%, #f7d9b8 0, transparent 32%), linear-gradient(135deg, #e8efe7, #f7f1df);
+	color: var(--auth-ink);
+}
+
+.login-panel,
+.auth-panel {
+	box-sizing: border-box;
+	width: min(100% - 2rem, 28rem);
+	padding: 2rem;
+	border: 1px solid rgba(23, 34, 27, 0.12);
+	border-radius: 8px;
+	background: var(--auth-surface);
+	box-shadow: 0 1.5rem 4rem rgba(23, 34, 27, 0.12);
+}
+
+.login-panel vaadin-login-form {
+	width: 100%;
+}
+
+.login-panel vaadin-checkbox {
+	margin-top: 0.75rem;
+}
+
+.auth-view h2 {
+	margin-top: 0;
+}
+
+.auth-view vaadin-email-field,
+.auth-view vaadin-password-field,
+.auth-view vaadin-button {
+	width: 100%;
+}
+
+.primary-action {
+	background: var(--auth-accent);
+	color: white;
+}
+
+@media (max-width: 480px) {
+	.login-panel,
+	.auth-panel {
+		padding: 1.25rem;
+	}
+}
