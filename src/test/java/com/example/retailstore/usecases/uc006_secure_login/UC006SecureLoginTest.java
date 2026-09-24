@@ -23,13 +23,25 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
+@ActiveProfiles({"test", "dev"})
 class UC006SecureLoginTest extends BaseIT {
+
+    private static final String ADMIN_PASSWORD = UUID.randomUUID().toString();
+
+    @DynamicPropertySource
+    static void configureDevelopmentAdmin(DynamicPropertyRegistry registry) {
+        registry.add("app.admin.password", () -> ADMIN_PASSWORD);
+    }
 
     @Autowired
     private AccountService accountService;
@@ -42,9 +54,9 @@ class UC006SecureLoginTest extends BaseIT {
         accountService.onboard("manager@example.com", "password", Set.of("INVENTORY_MANAGER"));
     }
 
-    /** Verifies that startup provisions an active administrator account. */
+    /** Verifies that development startup provisions an active administrator account. */
     @Test
-    void seedData_createsDefaultAdminAccountWithKnownCredentials() {
+    void mainFlow_developmentStartupCreatesConfiguredAdminAccount() {
         assertThat(accountRepository.findByEmail("admin@retailstore.com"))
                 .isPresent()
                 .get()
@@ -55,12 +67,12 @@ class UC006SecureLoginTest extends BaseIT {
         assertThat(accountService.latestResetTokenFor("admin@retailstore.com")).isEmpty();
     }
 
-    /** Verifies that the seeded administrator can sign in. */
+    /** Verifies that the development administrator can sign in with the configured password. */
     @Test
-    void mainFlow_defaultAdminCredentialsAreAccepted() throws Exception {
+    void mainFlow_configuredDevelopmentAdminCredentialsAreAccepted() throws Exception {
         mockMvc.perform(post("/login")
                         .param("username", "admin@retailstore.com")
-                        .param("password", "AbcXyz@123")
+                        .param("password", ADMIN_PASSWORD)
                         .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/home"));
