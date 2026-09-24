@@ -60,3 +60,22 @@ html, body {
 		padding: 1.25rem;
 	}
 }
+
+@media (max-width: 600px) {
+	.catalog-layout {
+		flex-direction: column;
+		width: 100%;
+		min-width: 0;
+	}
+
+	.catalog-layout > vaadin-vertical-layout,
+	.catalog-layout vaadin-grid {
+		width: 100%;
+		min-width: 0;
+	}
+
+	.catalog-details {
+		max-width: 100%;
+		overflow-wrap: anywhere;
+	}
+}

@@ -1,23 +1,23 @@
 package com.example.retailstore.security;
 
 import com.example.retailstore.shared.persistence.BaseEntity;
+import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "user_accounts")
 public class UserAccount extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Tsid
+    private @Nullable Long id;
 
     @Column(name = "email", nullable = false, unique = true, length = 320)
     private String email;

@@ -30,7 +30,7 @@ The following steps are mandatory and sequential. **Do not skip or reorder them.
 
 ### Step 3: Visually verify with Playwright MCP
 - **This step is mandatory.** Do not skip it, do not defer it.
-- Behaviour is already covered by the automated tests, so use Playwright MCP **only** to verify what those tests can't: layout, spacing, rendering, and visual appearance.
+- Behavior is already covered by the automated tests, so use Playwright MCP **only** to verify what those tests can't: layout, spacing, rendering, and visual appearance.
 - Follow the visual-verification workflow end-to-end: start the app, navigate every route, take screenshots, and validate the visual appearance. Don't re-check functional behaviour already covered by Step 2.
 - Fix any issues found before moving on.
 
@@ -38,6 +38,6 @@ The following steps are mandatory and sequential. **Do not skip or reorder them.
 - Keep iterating until everything looks and works great. Prefer great results over finishing quickly.
 
 ### Step 5: Commit
-- Once all steps are complete and everything works, create a git commit with the changes.
+- Once all steps are complete and everything works, check if all spring-boot skills are followed correctly before creating a git commit with the changes.
 
 **All steps must be completed before a use case is considered implemented.**

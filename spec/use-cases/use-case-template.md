@@ -53,6 +53,10 @@
 
 ---
 
+## Navigation
+
+Authenticated users reach use-case views through the shared navigation panel on `/home`. The panel links to Home, Product Catalog, Stock Tracking, Suppliers, Low-Stock Alerts, and Inventory Dashboard. Actions that modify data must be visible only to users with the required role, including `ADMIN` where specified.
+
 ## UI / Routes
 
 [Describe layout or interaction requirements. Reference a mockup if available.]

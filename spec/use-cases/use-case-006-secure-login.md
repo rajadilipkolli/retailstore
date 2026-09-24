@@ -153,6 +153,10 @@
 - [ ] Verify each business rule BR-01 through BR-06.
 - [ ] Verify business rules BR-07 and BR-08.
 
+## Navigation
+
+After authentication, `/home` displays a shared navigation panel linking to Home, Product Catalog, Stock Tracking, Suppliers, Low-Stock Alerts, and Inventory Dashboard. The panel is available to all authenticated roles; role-specific actions remain hidden unless the user has the required role.
+
 ## UI / Routes
 
 Use the standard responsive Vaadin `LoginForm`. The login view must provide email, password, Remember me, Login, and Forgot password controls. Password recovery and reset views are public. The home view is authenticated for all three primary roles. User registration and administrator onboarding are prerequisites and are outside this use case; any administrator onboarding view is restricted to `ADMIN`.
@@ -163,4 +167,4 @@ Use the standard responsive Vaadin `LoginForm`. The login view must provide emai
 | `/register` | public | Creates a pending `user_accounts` row; approval is required before login. |
 | `/forgot-password` | public | Accepts an email and returns a neutral recovery response. |
 | `/reset-password` | public | Accepts a valid reset token and a new password. |
-| `/home` | authenticated | Destination after successful authentication for all three roles. |
+| `/home` | authenticated | Destination after successful authentication for all three roles; displays the shared navigation panel. |

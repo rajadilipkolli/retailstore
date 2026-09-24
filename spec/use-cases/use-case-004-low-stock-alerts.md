@@ -60,6 +60,12 @@
 
 ---
 
+## Navigation
+
+Authenticated users reach Low-Stock Alerts through the shared navigation panel on `/home`. The panel links to Home, Product Catalog, Stock Tracking, Suppliers, Low-Stock Alerts, and Inventory Dashboard. The active alert count may be shown as a badge on the Low-Stock Alerts link.
+
+Alert acknowledgement controls are restricted to users with the `ADMIN` role.
+
 ## UI / Routes
 
 The Low-Stock Alerts interface displays active alerts and allows users to review and acknowledge them.

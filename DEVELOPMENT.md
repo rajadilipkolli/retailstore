@@ -11,12 +11,10 @@
 
 The app runs on port 8080 (configurable via `PORT` env var).
 
-On first startup, the application creates `admin@retailstore.com` with a random, unusable
-bootstrap password and sends a one-time password-reset link to that address. Configure
-`MAIL_HOST` and `MAIL_PORT` to deliver mail to the administrator before the first startup.
-The administrator must set a new password through the link before signing in. If mail
-delivery fails, restore mail service and use **Forgot password** to request another link.
-Later startups leave the account and its credentials unchanged.
+For local development, activate the `dev` Spring profile and inject `APP_ADMIN_PASSWORD`
+at runtime. This creates the administrator with that password only if the account does
+not already exist. Later startups leave its credentials unchanged. Do not put the password
+in source or committed configuration.
 
 ## Docker
 

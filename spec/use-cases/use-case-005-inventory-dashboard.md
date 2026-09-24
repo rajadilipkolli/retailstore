@@ -63,6 +63,12 @@
 
 ---
 
+## Navigation
+
+Authenticated users reach the Inventory Dashboard through the shared navigation panel on `/home`. The panel links to Home, Product Catalog, Stock Tracking, Suppliers, Low-Stock Alerts, and Inventory Dashboard.
+
+Dashboard metrics are publicly readable. Any administrative configuration controls are restricted to users with the `ADMIN` role.
+
 ## UI / Routes
 
 The dashboard is the main landing page and overview.

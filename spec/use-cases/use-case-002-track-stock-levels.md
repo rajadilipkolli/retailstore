@@ -59,6 +59,12 @@
 
 ---
 
+## Navigation
+
+Authenticated users reach Stock Tracking through the shared navigation panel on `/home`. The panel links to Home, Product Catalog, Stock Tracking, Suppliers, Low-Stock Alerts, and Inventory Dashboard.
+
+Stock information is publicly readable. Any stock adjustment controls are restricted to authenticated users with the `ADMIN` role until a dedicated warehouse-staff permission is implemented.
+
 ## UI / Routes
 
 The Stock Tracking interface provides a product list with stock information and an interface to record changes.

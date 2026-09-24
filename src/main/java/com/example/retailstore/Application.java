@@ -5,10 +5,13 @@ import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.theme.aura.Aura;
+import java.util.Set;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 
 @SpringBootApplication
 @StyleSheet(Aura.STYLESHEET)
@@ -21,13 +24,24 @@ public class Application implements AppShellConfigurator {
     }
 
     /**
-     * Creates the default administrator only on first startup.
+     * Creates the local development administrator account if it does not exist.
      *
-     * @param accountService service used to bootstrap the administrator account
-     * @return the runner that provisions the administrator when absent
+     * @param accountService service used to provision the administrator account
+     * @return the runner that provisions the administrator on startup
      */
     @Bean
-    ApplicationRunner seedDefaultAdmin(AccountService accountService) {
+    @Profile("dev")
+    ApplicationRunner seedDefaultAdmin(AccountService accountService, @Value("${app.admin.password}") String password) {
+        if (password.isBlank()) {
+            throw new IllegalArgumentException("Development administrator password is required.");
+        }
+        return args -> accountService.onboardIfAbsent("admin@retailstore.com", password, Set.of("ADMIN"));
+    }
+
+    /** Provisions an administrator for production through the password-reset bootstrap flow. */
+    @Bean
+    @Profile("prod")
+    ApplicationRunner bootstrapProductionAdmin(AccountService accountService) {
         return args -> accountService.bootstrapAdmin();
     }
 }
