@@ -39,6 +39,10 @@ html, body {
 	margin-top: 0;
 }
 
+.auth-error {
+	color: var(--aura-red-text);
+}
+
 .auth-view vaadin-email-field,
 .auth-view vaadin-password-field,
 .auth-view vaadin-button {

@@ -1,0 +1,38 @@
+version: '3'
+
+vars:
+  GOOS: "{{default OS .GOOS}}"
+  MVNW: '{{if eq .GOOS "windows"}}mvnw.cmd{{else}}./mvnw{{end}}'
+  COMPOSE_FILE: "compose.yml"
+
+tasks:
+  default:
+    cmds:
+      - task: build
+
+  build:
+    desc: Run formatting, tests, coverage, and package verification
+    cmds:
+      - "{{.MVNW}} clean spotless:apply verify"
+
+  build-image:
+    desc: Build the application image with Spring Boot Buildpacks
+    cmds:
+      - "{{.MVNW}} clean compile spring-boot:build-image -DskipTests"
+
+  start:
+    desc: Start local PostgreSQL and Mailpit services
+    cmds:
+      - docker compose -f "{{.COMPOSE_FILE}}" up --force-recreate -d
+
+  stop:
+    desc: Stop local development services
+    cmds:
+      - docker compose -f "{{.COMPOSE_FILE}}" stop
+      - docker compose -f "{{.COMPOSE_FILE}}" rm -f
+
+  restart:
+    desc: Restart local development services
+    cmds:
+      - task: stop
+      - task: start
