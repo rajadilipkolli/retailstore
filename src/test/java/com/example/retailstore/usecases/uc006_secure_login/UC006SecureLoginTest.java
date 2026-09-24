@@ -49,6 +49,9 @@ class UC006SecureLoginTest extends BaseIT {
                 .get()
                 .extracting(UserAccount::isOnboarded)
                 .isEqualTo(true);
+        assertThatThrownBy(() -> accountService.loadUserByUsername("admin@retailstore.com"))
+                .isInstanceOf(UsernameNotFoundException.class);
+        assertThat(accountService.latestResetTokenFor("admin@retailstore.com")).isPresent();
     }
 
     @Test

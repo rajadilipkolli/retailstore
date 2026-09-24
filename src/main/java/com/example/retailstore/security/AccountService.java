@@ -1,8 +1,11 @@
 package com.example.retailstore.security;
 
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountService implements UserDetailsService {
 
     private static final Duration RESET_TOKEN_LIFETIME = Duration.ofMinutes(30);
+    private static final String ADMIN_EMAIL = "admin@retailstore.com";
+    private static final String BOOTSTRAP_PASSWORD_CHANGE_REQUIRED = "BOOTSTRAP_PASSWORD_CHANGE_REQUIRED";
     private static final Logger LOG = LoggerFactory.getLogger(AccountService.class);
 
     private final ConcurrentHashMap<String, ResetRequest> resetRequests = new ConcurrentHashMap<>();
@@ -31,6 +36,26 @@ public class AccountService implements UserDetailsService {
     private final UserAccountRepository accountRepository;
     private final String resetUrl;
     private final Clock clock;
+
+    /**
+     * Creates the administrator with an unusable random initial password and emails a one-time
+     * reset link. An existing account is left untouched, including its password and roles.
+     */
+    @Transactional
+    public void bootstrapAdmin() {
+        if (accountRepository.findByEmail(ADMIN_EMAIL).isPresent()) {
+            return;
+        }
+        byte[] secret = new byte[32];
+        new SecureRandom().nextBytes(secret);
+        String password = Base64.getUrlEncoder().withoutPadding().encodeToString(secret);
+        accountRepository.save(new UserAccount(
+                ADMIN_EMAIL,
+                passwordEncoder.encode(password),
+                Set.of("ADMIN", BOOTSTRAP_PASSWORD_CHANGE_REQUIRED),
+                true));
+        requestPasswordReset(ADMIN_EMAIL);
+    }
 
     /**
      * Creates the account service backed by the persistent account store.
@@ -102,7 +127,9 @@ public class AccountService implements UserDetailsService {
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         UserAccount account = accountRepository.findByEmail(normalize(email)).orElse(null);
-        if (account == null || !account.isOnboarded()) {
+        if (account == null
+                || !account.isOnboarded()
+                || account.getRoles().contains(BOOTSTRAP_PASSWORD_CHANGE_REQUIRED)) {
             throw new UsernameNotFoundException("Account not found");
         }
         return User.withUsername(account.getEmail())
@@ -159,7 +186,9 @@ public class AccountService implements UserDetailsService {
         if (account == null || !account.isOnboarded()) {
             return false;
         }
-        account.update(passwordEncoder.encode(newPassword), account.getRoles(), account.isOnboarded());
+        Set<String> roles = new HashSet<>(account.getRoles());
+        roles.remove(BOOTSTRAP_PASSWORD_CHANGE_REQUIRED);
+        account.update(passwordEncoder.encode(newPassword), roles, account.isOnboarded());
         accountRepository.save(account);
         return true;
     }
