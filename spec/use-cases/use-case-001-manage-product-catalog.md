@@ -55,12 +55,18 @@
 
 ---
 
+## Navigation
+
+Authenticated users reach the catalog through the shared navigation panel on `/home`. The panel links to Home, Product Catalog, Stock Tracking, Suppliers, Low-Stock Alerts, and Inventory Dashboard.
+
+The catalog list and detail views are publicly readable. Only users with the `ADMIN` role see the `Add Product`, editable fields, and `Save product` controls.
+
 ## UI / Routes
 
 The Product Catalog interface provides a main list view with the ability to create and edit products.
 
 | Route | Access | Notes |
 |-------|--------|-------|
-| `/products` | public | List all products with search and filter options |
-| `/products/:id` | public | View and edit product details |
-| `/products/new` | public | Create a new product |
+| `/products` | public | List all products with search and filter options; editing controls are visible only to `ADMIN` |
+| `/products/:id` | public | View product details; edit controls are visible only to `ADMIN` |
+| `/products/new` | public | Create a new product; form is visible only to `ADMIN` |

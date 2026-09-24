@@ -5,6 +5,7 @@ import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.theme.aura.Aura;
+import java.util.Set;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -21,13 +22,13 @@ public class Application implements AppShellConfigurator {
     }
 
     /**
-     * Creates the default administrator only on first startup.
+     * Creates or updates the local development administrator account.
      *
-     * @param accountService service used to bootstrap the administrator account
-     * @return the runner that provisions the administrator when absent
+     * @param accountService service used to provision the administrator account
+     * @return the runner that provisions the administrator on startup
      */
     @Bean
     ApplicationRunner seedDefaultAdmin(AccountService accountService) {
-        return args -> accountService.bootstrapAdmin();
+        return args -> accountService.onboard("admin@retailstore.com", "AbcXyz@123", Set.of("ADMIN"));
     }
 }

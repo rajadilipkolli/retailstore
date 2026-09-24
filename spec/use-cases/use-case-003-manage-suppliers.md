@@ -59,6 +59,12 @@
 
 ---
 
+## Navigation
+
+Authenticated users reach Supplier Management through the shared navigation panel on `/home`. The panel links to Home, Product Catalog, Stock Tracking, Suppliers, Low-Stock Alerts, and Inventory Dashboard.
+
+Supplier information is publicly readable. Supplier creation and editing controls are restricted to users with the `ADMIN` role.
+
 ## UI / Routes
 
 The Supplier Management interface provides supplier list, detail views, and product linking.

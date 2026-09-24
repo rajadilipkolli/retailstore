@@ -2,7 +2,7 @@
 
 - [Key principles](#key-principles)
 - [Configure Spring Data JPA properties](#configure-spring-data-jpa-properties)
-- [IdentityGenerator (TSID)](#identitygenerator)
+- [TSID identifiers with `@Tsid`](#tsid-identifiers-with-tsid)
 - [Value Object for Primary Key](#value-object-for-primary-key)
 - [JPA Auditing](#use-jpa-auditing-support)
 - [AssertUtil](#assertutil-class-to-validate-input-parameters)
@@ -44,9 +44,11 @@ spring.jpa.properties.hibernate.connection.provider_disables_autocommit=true
 spring.jpa.properties.hibernate.query.fail_on_pagination_over_collection_fetch=true
 ```
 
-## IdentityGenerator
+## TSID identifiers with `@Tsid`
 
-To use TSID, add the following dependency:
+`@Tsid` is provided by Hypersistence Utils rather than Spring Data JPA itself.
+For this project, which uses Spring Boot 4.1 and Hibernate 7.3, add the
+Hibernate 7.3 integration:
 
 ```xml
 <dependency>
@@ -56,19 +58,37 @@ To use TSID, add the following dependency:
 </dependency>
 ```
 
-Use TSID to generate IDs as follows:
+Use `@Tsid` directly with JPA's `@Id` annotation:
 
 ```java
-import io.hypersistence.tsid.TSID;
+import io.hypersistence.utils.hibernate.id.Tsid;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
-public class IdGenerator {
-    private IdGenerator() {}
+@Entity
+public class UserEntity {
 
-    public static String generateString() {
-        return TSID.Factory.getTsid().toString();
+    @Id
+    @Tsid
+    private Long id;
+
+    protected UserEntity() {}
+
+    public UserEntity(/* required fields, but not id */) {
+        // Leave id null. Hibernate assigns the TSID when the entity is persisted.
     }
 }
 ```
+
+`@Tsid` supports `Long`, `String`, and Hypersistence Utils `TSID` identifier
+properties. `@GeneratedValue` and a custom generator are not required. Do not
+also assign the identifier in the entity constructor: leaving it null allows
+Spring Data JPA to recognize a newly created entity and lets Hibernate perform
+the generation during `persist`.
+
+For manually assigned identifiers or value objects that are generated before
+the entity is persisted, use an explicit generator such as
+`TSID.Factory.getTsid()` instead; do not combine that approach with `@Tsid`.
 
 ## Value Object for Primary Key
 

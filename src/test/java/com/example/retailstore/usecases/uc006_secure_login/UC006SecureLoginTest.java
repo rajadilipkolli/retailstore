@@ -43,15 +43,25 @@ class UC006SecureLoginTest extends BaseIT {
     }
 
     @Test
-    void seedData_createsDefaultAdminAccount() {
+    void seedData_createsDefaultAdminAccountWithKnownCredentials() {
         assertThat(accountRepository.findByEmail("admin@retailstore.com"))
                 .isPresent()
                 .get()
                 .extracting(UserAccount::isOnboarded)
                 .isEqualTo(true);
-        assertThatThrownBy(() -> accountService.loadUserByUsername("admin@retailstore.com"))
-                .isInstanceOf(UsernameNotFoundException.class);
-        assertThat(accountService.latestResetTokenFor("admin@retailstore.com")).isPresent();
+        assertThat(accountService.loadUserByUsername("admin@retailstore.com").getUsername())
+                .isEqualTo("admin@retailstore.com");
+        assertThat(accountService.latestResetTokenFor("admin@retailstore.com")).isEmpty();
+    }
+
+    @Test
+    void mainFlow_defaultAdminCredentialsAreAccepted() throws Exception {
+        mockMvc.perform(post("/login")
+                        .param("username", "admin@retailstore.com")
+                        .param("password", "AbcXyz@123")
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/home"));
     }
 
     @Test

@@ -22,7 +22,7 @@ public class ResetPasswordView extends VerticalLayout implements BeforeEnterObse
     private final PasswordField confirmation;
     private final Button submit;
     private final Paragraph invalidLinkMessage;
-    private String token;
+    private String token = "";
 
     /**
      * Creates the form used to replace a password from a reset link.
