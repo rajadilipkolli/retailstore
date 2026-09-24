@@ -1,5 +1,5 @@
 ---
-name: spring-boot-skill
+name: spring-boot
 description: >
   Build Spring Boot 4.x applications following the best practices. 
   Use this skill:
