@@ -98,6 +98,15 @@ public class AccountService implements UserDetailsService {
         accountRepository.save(account);
     }
 
+    /** Creates an account only when its email is unused, leaving existing credentials unchanged. */
+    @Transactional
+    public void onboardIfAbsent(String email, String rawPassword, Set<String> roles) {
+        String normalizedEmail = normalize(email);
+        if (accountRepository.findByEmail(normalizedEmail).isEmpty()) {
+            accountRepository.save(new UserAccount(normalizedEmail, passwordEncoder.encode(rawPassword), roles, true));
+        }
+    }
+
     /**
      * Registers an account that remains disabled until onboarding.
      *

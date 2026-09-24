@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Clock;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,30 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 class AccountServiceBootstrapTest {
+
+    @Test
+    void developmentOnboardingLeavesExistingAdministratorPasswordUnchanged() {
+        UserAccountRepository repository = mock(UserAccountRepository.class);
+        AtomicReference<UserAccount> stored = new AtomicReference<>();
+        when(repository.findByEmail("admin@retailstore.com"))
+                .thenAnswer(invocation -> Optional.ofNullable(stored.get()));
+        when(repository.save(any(UserAccount.class))).thenAnswer(invocation -> {
+            UserAccount account = invocation.getArgument(0);
+            stored.set(account);
+            return account;
+        });
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        AccountService service = new AccountService(
+                encoder, (recipient, url) -> {}, repository, "http://localhost/reset-password", Clock.systemUTC());
+
+        service.onboardIfAbsent("admin@retailstore.com", "first-secret", Set.of("ADMIN"));
+        String firstHash = stored.get().getPasswordHash();
+        service.onboardIfAbsent("admin@retailstore.com", "later-secret", Set.of("ADMIN"));
+
+        assertThat(encoder.matches("first-secret", firstHash)).isTrue();
+        assertThat(stored.get().getPasswordHash()).isEqualTo(firstHash);
+        verify(repository, times(1)).save(any(UserAccount.class));
+    }
 
     @Test
     void bootstrapRequiresPasswordChangeAndDoesNotReplaceExistingCredentials() {

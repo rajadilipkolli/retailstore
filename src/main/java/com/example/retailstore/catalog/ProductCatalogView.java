@@ -4,13 +4,18 @@ import com.example.retailstore.shared.ui.NavigationPanel;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
+import com.vaadin.flow.data.binder.Result;
+import com.vaadin.flow.data.binder.ValueContext;
+import com.vaadin.flow.data.converter.Converter;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.OptionalParameter;
@@ -24,17 +29,17 @@ import org.springframework.security.core.context.SecurityContextHolder;
 /** Shows the catalog to everyone and editing controls to administrators. */
 @Route("products")
 @RouteAlias("products/new")
-@RouteAlias("products/:productId")
 @AnonymousAllowed
 public class ProductCatalogView extends VerticalLayout implements HasUrlParameter<Long> {
 
     private final ProductService productService;
     private final Grid<Product> grid = new Grid<>(Product.class, false);
+    private final VerticalLayout productDetails = new VerticalLayout();
     private final TextField skuField = new TextField("SKU");
     private final TextField nameField = new TextField("Name");
     private final TextField categoryField = new TextField("Category");
     private final TextArea descriptionField = new TextArea("Description");
-    private final NumberField unitCostField = new NumberField("Unit Cost");
+    private final BigDecimalField unitCostField = new BigDecimalField("Unit Cost");
     private final NumberField reorderLevelField = new NumberField("Reorder Level");
     private final NumberField initialStockField = new NumberField("Initial Stock");
     private final Button saveButton = new Button("Save product");
@@ -48,13 +53,17 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
         configureGrid();
         setSpacing(true);
         setPadding(true);
-        add(new HorizontalLayout(new NavigationPanel(), content()));
+        HorizontalLayout layout = new HorizontalLayout(new NavigationPanel(), content());
+        layout.addClassName("catalog-layout");
+        add(layout);
         refreshGrid();
     }
 
     /** Builds the catalog grid and, for administrators, the edit form. */
     private VerticalLayout content() {
-        VerticalLayout content = new VerticalLayout(new H2("Product Catalog"), grid);
+        productDetails.addClassName("catalog-details");
+        productDetails.setVisible(false);
+        VerticalLayout content = new VerticalLayout(new H2("Product Catalog"), grid, productDetails);
         if (isAdmin()) {
             bindFields();
             content.add(toolbar(), createForm());
@@ -81,11 +90,30 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
     public void setParameter(BeforeEvent event, @OptionalParameter Long productId) {
         if (productId != null) {
             Product product = productService.findById(productId);
-            binder.setBean(product);
-            binder.readBean(product);
+            showProductDetails(product);
+            if (isAdmin()) {
+                binder.setBean(product);
+            }
         } else {
-            binder.setBean(new Product("", "", "", "", BigDecimal.ONE, 1, 0));
+            productDetails.setVisible(false);
+            if (isAdmin()) {
+                binder.setBean(new Product("", "", "", "", BigDecimal.ONE, 1, 0));
+            }
         }
+    }
+
+    /** Displays the selected product independently of the administrator's edit form. */
+    private void showProductDetails(Product product) {
+        productDetails.removeAll();
+        productDetails.add(
+                new H2(product.getName()),
+                new Paragraph("SKU: " + product.getSku()),
+                new Paragraph("Category: " + product.getCategory()),
+                new Paragraph("Description: " + product.getDescription()),
+                new Paragraph("Unit cost: " + product.getUnitCost().toPlainString()),
+                new Paragraph("Reorder level: " + product.getReorderLevel()),
+                new Paragraph("Initial stock: " + product.getInitialStock()));
+        productDetails.setVisible(true);
     }
 
     /** Builds the toolbar action that starts a new product entry. */
@@ -118,20 +146,35 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
         binder.bind(nameField, Product::getName, Product::setName);
         binder.bind(categoryField, Product::getCategory, Product::setCategory);
         binder.bind(descriptionField, Product::getDescription, Product::setDescription);
-        binder.bind(
-                unitCostField,
-                product -> product.getUnitCost() == null
-                        ? null
-                        : product.getUnitCost().doubleValue(),
-                (product, value) -> product.setUnitCost(value == null ? BigDecimal.ZERO : BigDecimal.valueOf(value)));
-        binder.bind(
-                reorderLevelField,
-                product -> (double) product.getReorderLevel(),
-                (product, value) -> product.setReorderLevel(value == null ? 0 : value.intValue()));
-        binder.bind(
-                initialStockField,
-                product -> (double) product.getInitialStock(),
-                (product, value) -> product.setInitialStock(value == null ? 0 : value.intValue()));
+        binder.bind(unitCostField, Product::getUnitCost, Product::setUnitCost);
+        binder.forField(reorderLevelField)
+                .withConverter(integerConverter())
+                .bind(Product::getReorderLevel, Product::setReorderLevel);
+        binder.forField(initialStockField)
+                .withConverter(integerConverter())
+                .bind(Product::getInitialStock, Product::setInitialStock);
+    }
+
+    /** Rejects fractional and out-of-range values before writing an integer property. */
+    private Converter<Double, Integer> integerConverter() {
+        return new Converter<>() {
+            @Override
+            public Result<Integer> convertToModel(Double value, ValueContext context) {
+                if (value == null
+                        || !Double.isFinite(value)
+                        || value < Integer.MIN_VALUE
+                        || value > Integer.MAX_VALUE
+                        || value != Math.rint(value)) {
+                    return Result.error("Enter a whole number within the integer range.");
+                }
+                return Result.ok(value.intValue());
+            }
+
+            @Override
+            public Double convertToPresentation(Integer value, ValueContext context) {
+                return value == null ? 0d : value.doubleValue();
+            }
+        };
     }
 
     /** Adds product columns and selects a row for editing. */
@@ -142,7 +185,7 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
         grid.addColumn(Product::getUnitCost).setHeader("Unit Cost");
         grid.asSingleSelect().addValueChangeListener(event -> {
             Product product = event.getValue();
-            if (product != null) {
+            if (product != null && isAdmin()) {
                 binder.setBean(product);
             }
         });
@@ -150,6 +193,9 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
 
     /** Creates or updates the form's product and reports validation errors. */
     private void saveProduct() {
+        if (!binder.validate().isOk()) {
+            return;
+        }
         Product draft = binder.getBean();
         if (draft == null) {
             draft = new Product("", "", "", "", BigDecimal.ONE, 1, 0);

@@ -1,8 +1,11 @@
 package com.example.retailstore.catalog;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import org.hibernate.exception.ConstraintViolationException;
 import org.jspecify.annotations.Nullable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,11 +63,8 @@ public class ProductService {
             BigDecimal unitCost,
             int reorderLevel,
             int initialStock) {
-        validateProduct(sku, name, category, unitCost, reorderLevel, initialStock, null);
+        validateProduct(sku, name, category, description, unitCost, reorderLevel, initialStock, null);
         String normalizedSku = normalizeSku(sku);
-        if (productRepository.existsBySku(normalizedSku)) {
-            throw new IllegalArgumentException("SKU must be unique across all products.");
-        }
         Product product = new Product(
                 normalizedSku,
                 name.trim(),
@@ -73,7 +73,7 @@ public class ProductService {
                 unitCost,
                 reorderLevel,
                 initialStock);
-        return productRepository.save(product);
+        return saveProduct(product);
     }
 
     /**
@@ -101,7 +101,7 @@ public class ProductService {
             int reorderLevel,
             int initialStock) {
         Product product = findById(id);
-        validateProduct(sku, name, category, unitCost, reorderLevel, initialStock, id);
+        validateProduct(sku, name, category, description, unitCost, reorderLevel, initialStock, id);
         String normalizedSku = normalizeSku(sku);
         product.setSku(normalizedSku);
         product.setName(name.trim());
@@ -110,7 +110,7 @@ public class ProductService {
         product.setUnitCost(unitCost);
         product.setReorderLevel(reorderLevel);
         product.setInitialStock(initialStock);
-        return productRepository.save(product);
+        return saveProduct(product);
     }
 
     /** Removes all products; used to reset the catalog between integration tests. */
@@ -124,6 +124,7 @@ public class ProductService {
             String sku,
             String name,
             String category,
+            String description,
             BigDecimal unitCost,
             int reorderLevel,
             int initialStock,
@@ -138,7 +139,31 @@ public class ProductService {
         if (category == null || category.isBlank()) {
             throw new IllegalArgumentException("Category is required.");
         }
-        if (unitCost == null || unitCost.compareTo(BigDecimal.ZERO) <= 0) {
+        if (normalizeSku(sku).length() > 100) {
+            throw new IllegalArgumentException("SKU must be at most 100 characters.");
+        }
+        if (name.trim().length() > 200) {
+            throw new IllegalArgumentException("Product name must be at most 200 characters.");
+        }
+        if (category.trim().length() > 100) {
+            throw new IllegalArgumentException("Category must be at most 100 characters.");
+        }
+        if (description != null && description.trim().length() > 1000) {
+            throw new IllegalArgumentException("Description must be at most 1000 characters.");
+        }
+        if (unitCost == null) {
+            throw new IllegalArgumentException("Unit cost must be positive.");
+        }
+        BigDecimal exactCost;
+        try {
+            exactCost = unitCost.setScale(2, RoundingMode.UNNECESSARY);
+        } catch (ArithmeticException exception) {
+            throw new IllegalArgumentException("Unit cost must have at most two decimal places.", exception);
+        }
+        if (exactCost.precision() > 19) {
+            throw new IllegalArgumentException("Unit cost exceeds DECIMAL(19, 2) range.");
+        }
+        if (unitCost.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Unit cost must be positive.");
         }
         if (reorderLevel <= 0) {
@@ -165,5 +190,20 @@ public class ProductService {
     /** Trims surrounding whitespace before persisting or comparing a SKU. */
     private String normalizeSku(String sku) {
         return sku.trim();
+    }
+
+    /** Flushes within the service so only a SKU constraint violation gets a domain error. */
+    private Product saveProduct(Product product) {
+        try {
+            return productRepository.saveAndFlush(product);
+        } catch (DataIntegrityViolationException exception) {
+            for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+                if (cause instanceof ConstraintViolationException constraint
+                        && "uk_products_sku".equalsIgnoreCase(constraint.getConstraintName())) {
+                    throw new IllegalArgumentException("SKU must be unique across all products.", exception);
+                }
+            }
+            throw exception;
+        }
     }
 }
