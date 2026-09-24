@@ -1,4 +1,4 @@
-package com.example.stock.security;
+package com.example.retailstore.security;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.checkbox.Checkbox;

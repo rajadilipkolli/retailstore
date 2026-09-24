@@ -1,4 +1,4 @@
-package com.example.stock.home;
+package com.example.retailstore.home;
 
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Paragraph;

@@ -1,9 +1,10 @@
-package com.example.stock.security;
+package com.example.retailstore.security;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -17,6 +18,10 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 public class ResetPasswordView extends VerticalLayout implements BeforeEnterObserver {
 
     private final AccountService accountService;
+    private final PasswordField password;
+    private final PasswordField confirmation;
+    private final Button submit;
+    private final Paragraph invalidLinkMessage;
     private String token;
 
     /**
@@ -31,13 +36,13 @@ public class ResetPasswordView extends VerticalLayout implements BeforeEnterObse
         setJustifyContentMode(JustifyContentMode.CENTER);
         setSizeFull();
 
-        PasswordField password = new PasswordField("New password");
-        PasswordField confirmation = new PasswordField("Confirm new password");
+        password = new PasswordField("New password");
+        confirmation = new PasswordField("Confirm new password");
         password.setMinLength(8);
         password.setRequired(true);
         confirmation.setRequired(true);
 
-        Button submit = new Button("Reset password", event -> {
+        submit = new Button("Reset password", event -> {
             if (password.isInvalid()
                     || confirmation.isInvalid()
                     || !password.getValue().equals(confirmation.getValue())) {
@@ -52,9 +57,13 @@ public class ResetPasswordView extends VerticalLayout implements BeforeEnterObse
             UI.getCurrent().navigate(LoginView.class);
         });
 
+        invalidLinkMessage = new Paragraph("This reset link is invalid or expired. Request a new link.");
+        invalidLinkMessage.addClassName("auth-error");
+        invalidLinkMessage.setVisible(false);
+
         Div panel = new Div();
         panel.addClassName("auth-panel");
-        panel.add(new H2("Choose a new password"), password, confirmation, submit);
+        panel.add(new H2("Choose a new password"), invalidLinkMessage, password, confirmation, submit);
         add(panel);
     }
 
@@ -74,5 +83,10 @@ public class ResetPasswordView extends VerticalLayout implements BeforeEnterObse
                         .stream()
                         .findFirst()
                         .orElse("");
+        boolean usable = accountService.isResetTokenUsable(token);
+        invalidLinkMessage.setVisible(!usable);
+        password.setEnabled(usable);
+        confirmation.setEnabled(usable);
+        submit.setEnabled(usable);
     }
 }

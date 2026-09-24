@@ -1,5 +1,6 @@
-package com.example.stock.security;
+package com.example.retailstore.security;
 
+import com.example.retailstore.shared.persistence.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,22 +13,22 @@ import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "user_accounts")
-public class UserAccount {
+public class UserAccount extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 320)
+    @Column(name = "email", nullable = false, unique = true, length = 320)
     private String email;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(nullable = false, length = 500)
+    @Column(name = "roles", nullable = false, length = 500)
     private String roles;
 
-    @Column(nullable = false)
+    @Column(name = "onboarded", nullable = false)
     private boolean onboarded;
 
     /**

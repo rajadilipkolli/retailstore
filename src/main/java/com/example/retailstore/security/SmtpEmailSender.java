@@ -1,4 +1,4 @@
-package com.example.stock.security;
+package com.example.retailstore.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;

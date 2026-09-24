@@ -1,4 +1,4 @@
-package com.example.stock.usecases.uc006_secure_login;
+package com.example.retailstore.usecases.uc006_secure_login;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -9,11 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.example.stock.security.AccountService;
-import com.example.stock.security.EmailSender;
-import com.example.stock.security.UserAccount;
-import com.example.stock.security.UserAccountRepository;
-import com.example.stock.usecases.BaseIT;
+import com.example.retailstore.security.AccountService;
+import com.example.retailstore.security.EmailSender;
+import com.example.retailstore.security.UserAccount;
+import com.example.retailstore.security.UserAccountRepository;
+import com.example.retailstore.usecases.BaseIT;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -40,6 +40,15 @@ class UC006SecureLoginTest extends BaseIT {
     @BeforeEach
     void onboardTestManager() {
         accountService.onboard("manager@example.com", "password", Set.of("INVENTORY_MANAGER"));
+    }
+
+    @Test
+    void seedData_createsDefaultAdminAccount() {
+        assertThat(accountRepository.findByEmail("admin@retailstore.com"))
+                .isPresent()
+                .get()
+                .extracting(UserAccount::isOnboarded)
+                .isEqualTo(true);
     }
 
     @Test

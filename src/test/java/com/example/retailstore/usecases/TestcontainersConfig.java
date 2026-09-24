@@ -1,4 +1,4 @@
-package com.example.stock.usecases;
+package com.example.retailstore.usecases;
 
 import ch.martinelli.oss.testcontainers.mailpit.MailpitContainer;
 import org.springframework.boot.test.context.TestConfiguration;

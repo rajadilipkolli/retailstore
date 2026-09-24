@@ -1,4 +1,4 @@
-package com.example.stock.security;
+package com.example.retailstore.security;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -17,12 +17,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AccountService implements UserDetailsService {
 
     private static final Duration RESET_TOKEN_LIFETIME = Duration.ofMinutes(30);
-    private static final Logger logger = LoggerFactory.getLogger(AccountService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AccountService.class);
 
     private final ConcurrentHashMap<String, ResetRequest> resetRequests = new ConcurrentHashMap<>();
     private final PasswordEncoder passwordEncoder;
@@ -62,6 +63,7 @@ public class AccountService implements UserDetailsService {
      * @param rawPassword unencoded account password
      * @param roles roles granted to the account
      */
+    @Transactional
     public void onboard(String email, String rawPassword, Set<String> roles) {
         String normalizedEmail = normalize(email);
         UserAccount account = accountRepository
@@ -79,6 +81,7 @@ public class AccountService implements UserDetailsService {
      * @param roles requested account roles
      * @return {@code true} when the account was created, or {@code false} when the email already exists
      */
+    @Transactional
     public boolean register(String email, String rawPassword, Set<String> roles) {
         String normalizedEmail = normalize(email);
         if (accountRepository.findByEmail(normalizedEmail).isPresent()) {
@@ -96,6 +99,7 @@ public class AccountService implements UserDetailsService {
      * @throws UsernameNotFoundException when the account is missing or has not been onboarded
      */
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         UserAccount account = accountRepository.findByEmail(normalize(email)).orElse(null);
         if (account == null || !account.isOnboarded()) {
@@ -113,6 +117,7 @@ public class AccountService implements UserDetailsService {
      * @param email account email address
      * @return a neutral response that does not reveal whether the account exists
      */
+    @Transactional
     public String requestPasswordReset(String email) {
         String normalizedEmail = normalize(email);
         if (accountRepository
@@ -126,7 +131,7 @@ public class AccountService implements UserDetailsService {
                 emailSender.sendPasswordReset(normalizedEmail, resetUrl + "?token=" + token);
             } catch (RuntimeException exception) {
                 resetRequests.remove(token);
-                logger.warn("Password reset email delivery failed: {}", exception.getMessage());
+                LOG.warn("Password reset email delivery failed: {}", exception.getMessage());
             }
         }
         return "If an account exists for that email, a reset link has been sent.";
@@ -139,6 +144,7 @@ public class AccountService implements UserDetailsService {
      * @param newPassword replacement password
      * @return {@code true} when the password was changed
      */
+    @Transactional
     public boolean resetPassword(String token, String newPassword) {
         if (newPassword == null || newPassword.length() < 8) {
             return false;
@@ -157,11 +163,33 @@ public class AccountService implements UserDetailsService {
     }
 
     /**
+     * Checks whether a reset token can currently be used.
+     *
+     * @param token single-use reset token
+     * @return {@code true} when the token is present, unexpired, and belongs to an onboarded account
+     */
+    @Transactional(readOnly = true)
+    public boolean isResetTokenUsable(String token) {
+        if (token == null || token.isBlank()) {
+            return false;
+        }
+        ResetRequest request = resetRequests.get(token);
+        if (request == null || request.expiresAt().isBefore(Instant.now(clock))) {
+            return false;
+        }
+        return accountRepository
+                .findByEmail(request.email())
+                .map(UserAccount::isOnboarded)
+                .orElse(false);
+    }
+
+    /**
      * Finds a pending reset token for an account.
      *
      * @param email account email address
      * @return a pending token, when one exists
      */
+    @Transactional(readOnly = true)
     public Optional<String> latestResetTokenFor(String email) {
         String normalizedEmail = normalize(email);
         return resetRequests.entrySet().stream()

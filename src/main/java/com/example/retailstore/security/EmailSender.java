@@ -1,4 +1,4 @@
-package com.example.stock.security;
+package com.example.retailstore.security;
 
 public interface EmailSender {
 

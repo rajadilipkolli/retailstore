@@ -10,12 +10,12 @@ These files describe the project as a whole. They ship with sensible defaults (V
 
 Edit them when you want to deviate from the defaults or add project-specific context.
 
-| File | What goes here |
-|------|----------------|
-| `spec/project-context.md` | Vision, users, scope, constraints |
-| `spec/architecture.md` | Tech stack and application structure |
-| `spec/datamodel/datamodel.md` | Entities and relationships |
-| `spec/design-system.md` | Theme, components, visual standards |
+| File                          | What goes here                       |
+|-------------------------------|--------------------------------------|
+| `spec/project-context.md`     | Vision, users, scope, constraints    |
+| `spec/architecture.md`        | Tech stack and application structure |
+| `spec/datamodel/datamodel.md` | Entities and relationships           |
+| `spec/design-system.md`       | Theme, components, visual standards  |
 
 If the AI keeps getting something wrong or makes a choice you disagree with, the fix is almost always to add or sharpen a rule in one of these files — not to repeat yourself in chat.
 

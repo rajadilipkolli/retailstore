@@ -1,4 +1,4 @@
-package com.example.stock.security;
+package com.example.retailstore.security;
 
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
