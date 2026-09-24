@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+/** Shows the catalog to everyone and editing controls to administrators. */
 @Route("products")
 @RouteAlias("products/new")
 @RouteAlias("products/:productId")
@@ -41,6 +42,7 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
     private final Button addProductButton = new Button("Add Product");
     private final BeanValidationBinder<Product> binder = new BeanValidationBinder<>(Product.class);
 
+    /** @param productService service used to list and edit products */
     public ProductCatalogView(ProductService productService) {
         this.productService = productService;
         configureGrid();
@@ -50,6 +52,7 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
         refreshGrid();
     }
 
+    /** Builds the catalog grid and, for administrators, the edit form. */
     private VerticalLayout content() {
         VerticalLayout content = new VerticalLayout(new H2("Product Catalog"), grid);
         if (isAdmin()) {
@@ -60,6 +63,7 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
         return content;
     }
 
+    /** Checks whether the current user has the administrator role. */
     private boolean isAdmin() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication != null
@@ -67,6 +71,12 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
                         .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
     }
 
+    /**
+     * Loads the requested product into the form, or prepares a new product.
+     *
+     * @param event the navigation event
+     * @param productId identifier of the requested product, if any
+     */
     @Override
     public void setParameter(BeforeEvent event, @OptionalParameter Long productId) {
         if (productId != null) {
@@ -78,6 +88,7 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
         }
     }
 
+    /** Builds the toolbar action that starts a new product entry. */
     private HorizontalLayout toolbar() {
         addProductButton.addClickListener(click -> {
             binder.setBean(new Product("", "", "", "", BigDecimal.ONE, 1, 0));
@@ -86,6 +97,7 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
         return new HorizontalLayout(addProductButton);
     }
 
+    /** Builds the product fields and their save and clear actions. */
     private VerticalLayout createForm() {
         HorizontalLayout formLayout = new HorizontalLayout(
                 skuField, nameField, categoryField, unitCostField, reorderLevelField, initialStockField);
@@ -100,6 +112,7 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
         return form;
     }
 
+    /** Connects form fields to the selected product's properties. */
     private void bindFields() {
         binder.bind(skuField, Product::getSku, Product::setSku);
         binder.bind(nameField, Product::getName, Product::setName);
@@ -121,6 +134,7 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
                 (product, value) -> product.setInitialStock(value == null ? 0 : value.intValue()));
     }
 
+    /** Adds product columns and selects a row for editing. */
     private void configureGrid() {
         grid.addColumn(Product::getSku).setHeader("SKU");
         grid.addColumn(Product::getName).setHeader("Name");
@@ -134,6 +148,7 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
         });
     }
 
+    /** Creates or updates the form's product and reports validation errors. */
     private void saveProduct() {
         Product draft = binder.getBean();
         if (draft == null) {
@@ -168,10 +183,12 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
         }
     }
 
+    /** Replaces the form's product with an empty draft. */
     private void clearForm() {
         binder.setBean(new Product("", "", "", "", BigDecimal.ONE, 1, 0));
     }
 
+    /** Reloads the displayed products in SKU order. */
     private void refreshGrid() {
         grid.setItems(productService.listAll());
     }

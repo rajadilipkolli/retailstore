@@ -42,6 +42,7 @@ class UC006SecureLoginTest extends BaseIT {
         accountService.onboard("manager@example.com", "password", Set.of("INVENTORY_MANAGER"));
     }
 
+    /** Verifies that startup provisions an active administrator account. */
     @Test
     void seedData_createsDefaultAdminAccountWithKnownCredentials() {
         assertThat(accountRepository.findByEmail("admin@retailstore.com"))
@@ -54,6 +55,7 @@ class UC006SecureLoginTest extends BaseIT {
         assertThat(accountService.latestResetTokenFor("admin@retailstore.com")).isEmpty();
     }
 
+    /** Verifies that the seeded administrator can sign in. */
     @Test
     void mainFlow_defaultAdminCredentialsAreAccepted() throws Exception {
         mockMvc.perform(post("/login")

@@ -17,11 +17,13 @@ class UC001ManageProductCatalogTest extends BaseIT {
     @Autowired
     private ProductService productService;
 
+    /** Starts each catalog scenario with no products. */
     @BeforeEach
     void clearProducts() {
         productService.deleteAll();
     }
 
+    /** Verifies that a product can be created and its details edited. */
     @Test
     void mainFlow_createAndEditProduct() {
         Product created =
@@ -46,6 +48,7 @@ class UC001ManageProductCatalogTest extends BaseIT {
         assertThat(updated.getUnitCost()).isEqualByComparingTo(new BigDecimal("13.75"));
     }
 
+    /** Verifies that two products cannot share a SKU. */
     @Test
     void br01_duplicateSkuIsRejected() {
         productService.save("SKU-200", "Widget", "Tools", "Steel widget", new BigDecimal("12.50"), 5, 10);
@@ -56,6 +59,7 @@ class UC001ManageProductCatalogTest extends BaseIT {
                 .hasMessageContaining("SKU");
     }
 
+    /** Verifies that SKU and name are required when creating a product. */
     @Test
     void br02_requiredFieldsAreValidated() {
         assertThatThrownBy(
@@ -69,6 +73,7 @@ class UC001ManageProductCatalogTest extends BaseIT {
                 .hasMessageContaining("name");
     }
 
+    /** Verifies that cost and reorder level must be positive. */
     @Test
     void br03_costAndReorderLevelMustBePositive() {
         assertThatThrownBy(() -> productService.save("SKU-400", "Widget", "Tools", "Zero cost", BigDecimal.ZERO, 5, 10))
@@ -81,6 +86,7 @@ class UC001ManageProductCatalogTest extends BaseIT {
                 .hasMessageContaining("reorder");
     }
 
+    /** Verifies that the reorder threshold cannot exceed starting stock. */
     @Test
     void br04_reorderLevelCannotExceedInitialStock() {
         assertThatThrownBy(() ->
