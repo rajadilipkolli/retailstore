@@ -25,14 +25,29 @@ public abstract class BaseEntity {
     @Column(name = "version", nullable = false)
     private long version;
 
+    /**
+     * Returns the creation time recorded by JPA auditing.
+     *
+     * @return the creation time, or {@code null} before auditing populates it
+     */
     public Instant getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * Returns the last modification time recorded by JPA auditing.
+     *
+     * @return the last modification time, or {@code null} before auditing populates it
+     */
     public Instant getUpdatedAt() {
         return updatedAt;
     }
 
+    /**
+     * Returns the version JPA uses for optimistic locking.
+     *
+     * @return the current optimistic-lock version
+     */
     public long getVersion() {
         return version;
     }

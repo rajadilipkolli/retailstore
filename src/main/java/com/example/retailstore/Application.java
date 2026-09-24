@@ -21,6 +21,13 @@ public class Application implements AppShellConfigurator {
         SpringApplication.run(Application.class, args);
     }
 
+    /**
+     * Creates a startup runner that onboards the default administrator. Each run replaces the
+     * account's password and roles if it already exists.
+     *
+     * @param accountService service used to create or update the administrator account
+     * @return the runner that onboards the administrator at startup
+     */
     @Bean
     ApplicationRunner seedDefaultAdmin(AccountService accountService) {
         return args -> accountService.onboard("admin@retailstore.com", "Admin@1234", Set.of("ADMIN"));

@@ -113,9 +113,11 @@ public class AccountService implements UserDetailsService {
 
     /**
      * Sends a single-use password-reset link for an onboarded account.
+     * If email delivery fails, the token is discarded and the same neutral response is returned.
      *
      * @param email account email address
      * @return a neutral response that does not reveal whether the account exists
+     * @throws RuntimeException if the account lookup fails
      */
     @Transactional
     public String requestPasswordReset(String email) {

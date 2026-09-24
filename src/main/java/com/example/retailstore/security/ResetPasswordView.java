@@ -68,7 +68,8 @@ public class ResetPasswordView extends VerticalLayout implements BeforeEnterObse
     }
 
     /**
-     * Captures the reset token from the route query parameters.
+     * Reads the first reset token from the route query parameters. Missing or unusable tokens
+     * display an error and disable the password fields and submit button.
      *
      * @param event navigation event containing the reset link parameters
      */
