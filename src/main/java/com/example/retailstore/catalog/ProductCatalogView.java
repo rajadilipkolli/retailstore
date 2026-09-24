@@ -18,6 +18,7 @@ import com.vaadin.flow.data.binder.ValueContext;
 import com.vaadin.flow.data.converter.Converter;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
+import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
@@ -89,7 +90,13 @@ public class ProductCatalogView extends VerticalLayout implements HasUrlParamete
     @Override
     public void setParameter(BeforeEvent event, @OptionalParameter Long productId) {
         if (productId != null) {
-            Product product = productService.findById(productId);
+            Product product;
+            try {
+                product = productService.findById(productId);
+            } catch (IllegalArgumentException exception) {
+                event.rerouteToError(NotFoundException.class);
+                return;
+            }
             showProductDetails(product);
             if (isAdmin()) {
                 binder.setBean(product);

@@ -3,6 +3,7 @@ package com.example.retailstore.catalog;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -12,6 +13,7 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.router.BeforeEvent;
+import com.vaadin.flow.router.NotFoundException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Stream;
@@ -44,6 +46,23 @@ class ProductCatalogViewTest {
                         .map(component -> ((Paragraph) component).getText()))
                 .contains("SKU: SKU-1", "Category: Tools", "Description: Steel widget", "Unit cost: 12.50");
         assertThat(descendants(view).filter(BigDecimalField.class::isInstance)).isEmpty();
+    }
+
+    @Test
+    void missingProductReroutesToNotFoundBeforeShowingDetails() {
+        when(service.findById(99L)).thenThrow(new IllegalArgumentException("Product not found"));
+        ProductCatalogView view = new ProductCatalogView(service);
+        BeforeEvent event = mock(BeforeEvent.class);
+
+        view.setParameter(event, 99L);
+
+        verify(event).rerouteToError(NotFoundException.class);
+        assertThat(descendants(view)
+                        .filter(component -> component.getClassNames().contains("catalog-details"))
+                        .findFirst()
+                        .orElseThrow()
+                        .isVisible())
+                .isFalse();
     }
 
     @Test

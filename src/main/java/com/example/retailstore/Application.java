@@ -37,4 +37,11 @@ public class Application implements AppShellConfigurator {
         }
         return args -> accountService.onboardIfAbsent("admin@retailstore.com", password, Set.of("ADMIN"));
     }
+
+    /** Provisions an administrator for production through the password-reset bootstrap flow. */
+    @Bean
+    @Profile("prod")
+    ApplicationRunner bootstrapProductionAdmin(AccountService accountService) {
+        return args -> accountService.bootstrapAdmin();
+    }
 }
