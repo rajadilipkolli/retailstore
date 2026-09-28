@@ -1,5 +1,6 @@
 package com.example.retailstore.catalog;
 
+import com.example.retailstore.shared.events.SpringEventPublisher;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -15,10 +16,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final SpringEventPublisher eventPublisher;
 
-    /** @param productRepository storage for catalog products */
-    public ProductService(ProductRepository productRepository) {
+    /**
+     * @param productRepository storage for catalog products
+     * @param eventPublisher notifies dependent modules when catalog data changes
+     */
+    public ProductService(ProductRepository productRepository, SpringEventPublisher eventPublisher) {
         this.productRepository = productRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /** @return all products ordered by stock keeping unit */
@@ -73,7 +79,12 @@ public class ProductService {
                 unitCost,
                 reorderLevel,
                 initialStock);
-        return saveProduct(product);
+        Product saved = saveProduct(product);
+        Long savedId = saved.getId();
+        if (savedId != null) {
+            eventPublisher.publish(new ProductCreated(savedId, initialStock));
+        }
+        return saved;
     }
 
     /**
@@ -101,6 +112,7 @@ public class ProductService {
             int reorderLevel,
             int initialStock) {
         Product product = findById(id);
+        int previousReorderLevel = product.getReorderLevel();
         validateProduct(sku, name, category, description, unitCost, reorderLevel, initialStock, id);
         String normalizedSku = normalizeSku(sku);
         product.setSku(normalizedSku);
@@ -110,12 +122,17 @@ public class ProductService {
         product.setUnitCost(unitCost);
         product.setReorderLevel(reorderLevel);
         product.setInitialStock(initialStock);
-        return saveProduct(product);
+        Product saved = saveProduct(product);
+        if (previousReorderLevel != reorderLevel) {
+            eventPublisher.publish(new ProductReorderLevelChanged(id));
+        }
+        return saved;
     }
 
     /** Removes all products; used to reset the catalog between integration tests. */
     @Transactional
     public void deleteAll() {
+        eventPublisher.publish(new ProductCatalogCleared());
         productRepository.deleteAll();
     }
 

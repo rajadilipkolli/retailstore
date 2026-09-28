@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.example.retailstore.shared.events.SpringEventPublisher;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.Optional;
@@ -17,7 +18,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 class ProductServiceTest {
 
     private final ProductRepository repository = mock(ProductRepository.class);
-    private final ProductService service = new ProductService(repository);
+    private final ProductService service = new ProductService(repository, mock(SpringEventPublisher.class));
 
     @Test
     void rejectsValuesBeyondMappedColumnLengthsOnCreateAndUpdate() {

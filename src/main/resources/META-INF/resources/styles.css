@@ -54,6 +54,50 @@ html, body {
 	color: white;
 }
 
+.stock-layout {
+	width: 100%;
+	min-width: 0;
+}
+
+.stock-layout > vaadin-vertical-layout {
+	min-width: 0;
+}
+
+.stock-layout vaadin-grid {
+	width: 100%;
+}
+
+.stock-detail {
+	width: 100%;
+	border-top: 1px solid var(--vaadin-border-color-secondary);
+}
+
+.supplier-layout {
+	width: 100%;
+	min-width: 0;
+}
+
+.supplier-layout > vaadin-vertical-layout {
+	min-width: 0;
+}
+
+.supplier-layout vaadin-grid {
+	width: 100%;
+}
+
+.alert-layout {
+	width: 100%;
+	min-width: 0;
+}
+
+.alert-layout > vaadin-vertical-layout {
+	min-width: 0;
+}
+
+.alert-layout vaadin-grid {
+	width: 100%;
+}
+
 @media (max-width: 480px) {
 	.login-panel,
 	.auth-panel {
@@ -62,6 +106,30 @@ html, body {
 }
 
 @media (max-width: 600px) {
+	.alert-layout {
+		flex-direction: column;
+	}
+
+	.alert-layout > vaadin-vertical-layout {
+		width: 100%;
+	}
+
+	.supplier-layout {
+		flex-direction: column;
+	}
+
+	.supplier-layout > vaadin-vertical-layout {
+		width: 100%;
+	}
+
+	.stock-layout {
+		flex-direction: column;
+	}
+
+	.stock-layout > vaadin-vertical-layout {
+		width: 100%;
+	}
+
 	.catalog-layout {
 		flex-direction: column;
 		width: 100%;

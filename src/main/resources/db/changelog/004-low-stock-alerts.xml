@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="005-create-low-stock-alerts" author="retailstore">
+        <createTable tableName="low_stock_alerts">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_low_stock_alerts"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_id" type="BIGINT">
+                <constraints nullable="false" references="products(id)" foreignKeyName="fk_low_stock_alerts_product"/>
+            </column>
+            <column name="alerted_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="acknowledged" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="resolved_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+
+        <sql>CREATE UNIQUE INDEX uk_low_stock_alerts_active_product ON low_stock_alerts (product_id) WHERE resolved_at IS NULL</sql>
+
+        <createIndex tableName="low_stock_alerts" indexName="ix_low_stock_alerts_alerted_at">
+            <column name="alerted_at" descending="true"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
