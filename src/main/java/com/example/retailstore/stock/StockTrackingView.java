@@ -70,6 +70,12 @@ public class StockTrackingView extends VerticalLayout implements HasUrlParameter
         return content;
     }
 
+    /**
+     * Shows details when a product identifier is supplied; reroutes a missing product to not found.
+     * A null identifier leaves the view unchanged.
+     *
+     * @throws IllegalArgumentException if the product exists but its stock record is missing
+     */
     @Override
     public void setParameter(BeforeEvent event, @OptionalParameter Long productId) {
         if (productId == null) {
@@ -112,6 +118,7 @@ public class StockTrackingView extends VerticalLayout implements HasUrlParameter
         historyGrid.addColumn(StockHistory::getReason).setHeader("Reason");
     }
 
+    /** Reloads all products and balances, initializing missing balances from catalog starting quantities. */
     private void refreshRows() {
         Map<Long, Stock> balances =
                 stockService.listAll().stream().collect(Collectors.toMap(Stock::getProductId, Function.identity()));
@@ -129,6 +136,7 @@ public class StockTrackingView extends VerticalLayout implements HasUrlParameter
         grid.setItems(rows);
     }
 
+    /** Filters loaded rows by SKU or name, ignoring case and surrounding whitespace; null or blank shows all rows. */
     private void filterRows(String query) {
         String normalized = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
         grid.setItems(rows.stream()

@@ -47,6 +47,7 @@ public class LowStockAlertActionView extends VerticalLayout implements BeforeEnt
         add(layout);
     }
 
+    /** Loads the requested alert action, rerouting invalid identifiers or missing alert/product data to not found. */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String parameter = event.getRouteParameters().get("alertId").orElse(null);
@@ -77,6 +78,10 @@ public class LowStockAlertActionView extends VerticalLayout implements BeforeEnt
         content.add(new Anchor("/alerts/" + id, "Back to alert"));
     }
 
+    /**
+     * Acknowledges or reopens the loaded alert and navigates to its details on success; does nothing without a loaded
+     * alert. Shows validation failures and concurrent-update failures as notifications.
+     */
     private void performAction() {
         if (alertId == null || alert == null) {
             return;

@@ -62,6 +62,7 @@ public class SupplierDetailView extends VerticalLayout implements BeforeEnterObs
                 .setSortable(true);
     }
 
+    /** Loads supplier details and offers, rerouting invalid identifiers or missing related data to not found. */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String parameter = event.getRouteParameters().get("supplierId").orElse(null);

@@ -36,7 +36,12 @@ public class SupplierService {
         return supplierRepository.findAllByOrderByNameAsc();
     }
 
-    /** Searches supplier names and contact details. */
+    /**
+     * Searches names, contact people, email addresses, and phone numbers for a case-insensitive substring.
+     *
+     * @param query search text, trimmed before matching; null or blank returns all suppliers
+     * @return matching suppliers ordered by name
+     */
     @Transactional(readOnly = true)
     public List<Supplier> search(String query) {
         String term = query == null ? "" : query.trim();
@@ -48,7 +53,11 @@ public class SupplierService {
                         term, term, term, term);
     }
 
-    /** Loads one supplier or reports a domain-level not-found error. */
+    /**
+     * Loads one supplier.
+     *
+     * @throws IllegalArgumentException if the supplier does not exist
+     */
     @Transactional(readOnly = true)
     public Supplier findById(Long id) {
         return supplierRepository
@@ -56,7 +65,16 @@ public class SupplierService {
                 .orElseThrow(() -> new IllegalArgumentException("Supplier not found: " + id));
     }
 
-    /** Creates a supplier after validating its details and unique name. */
+    /**
+     * Creates a supplier with trimmed details and a name unique ignoring case. Requires the ADMIN role.
+     * At least one of email or phone must be supplied; other missing contact details become empty strings.
+     *
+     * @return the saved supplier
+     * @throws IllegalArgumentException if the name is blank or taken, both email and phone are blank, a supplied email
+     *     is invalid, or a field exceeds its length limit
+     * @throws DataIntegrityViolationException if saving violates a constraint other than case-insensitive name uniqueness
+     * @throws org.springframework.security.access.AccessDeniedException if the caller lacks the ADMIN role
+     */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public Supplier create(
@@ -71,7 +89,15 @@ public class SupplierService {
                 details.notes()));
     }
 
-    /** Updates an existing supplier after validation. */
+    /**
+     * Replaces an existing supplier's details using the same normalization and validation as {@link #create}.
+     * Requires the ADMIN role.
+     *
+     * @return the saved supplier
+     * @throws IllegalArgumentException if the supplier is missing or the details fail validation
+     * @throws DataIntegrityViolationException if saving violates a constraint other than case-insensitive name uniqueness
+     * @throws org.springframework.security.access.AccessDeniedException if the caller lacks the ADMIN role
+     */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public Supplier update(
@@ -88,21 +114,37 @@ public class SupplierService {
         return saveSupplier(supplier);
     }
 
-    /** Lists a supplier's product offers. */
+    /**
+     * Lists a supplier's product offers in product identifier order.
+     *
+     * @throws IllegalArgumentException if the supplier does not exist
+     */
     @Transactional(readOnly = true)
     public List<ProductSupplier> productsForSupplier(Long supplierId) {
         findById(supplierId);
         return productSupplierRepository.findAllBySupplierIdOrderByProductIdAsc(supplierId);
     }
 
-    /** Lists suppliers offering a product. */
+    /**
+     * Lists offers for a product in supplier identifier order.
+     *
+     * @throws IllegalArgumentException if the product does not exist
+     */
     @Transactional(readOnly = true)
     public List<ProductSupplier> suppliersForProduct(Long productId) {
         productService.findById(productId);
         return productSupplierRepository.findAllByProductIdOrderBySupplierIdAsc(productId);
     }
 
-    /** Adds or updates a supplier's offer for one product. */
+    /**
+     * Adds or updates a supplier's offer for one product. Requires the ADMIN role.
+     *
+     * @param supplierSku the supplier's product identifier, nonblank and at most 100 characters after trimming
+     * @param leadTimeDays expected delivery time in days, strictly positive
+     * @return the saved offer
+     * @throws IllegalArgumentException if the supplier or product is missing, or the offer is invalid
+     * @throws org.springframework.security.access.AccessDeniedException if the caller lacks the ADMIN role
+     */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public ProductSupplier associateProduct(Long supplierId, Long productId, String supplierSku, int leadTimeDays) {
@@ -117,7 +159,13 @@ public class SupplierService {
         return productSupplierRepository.saveAndFlush(offer);
     }
 
-    /** Removes a supplier's association with one product. */
+    /**
+     * Removes a supplier's association with one product, leaving both records intact.
+     * Does nothing if the association is absent. Requires the ADMIN role.
+     *
+     * @throws IllegalArgumentException if the supplier or product does not exist
+     * @throws org.springframework.security.access.AccessDeniedException if the caller lacks the ADMIN role
+     */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void removeProduct(Long supplierId, Long productId) {
@@ -126,7 +174,7 @@ public class SupplierService {
         productSupplierRepository.deleteBySupplierIdAndProductId(supplierId, productId);
     }
 
-    /** Clears supplier data for isolated integration-test setup. */
+    /** Removes all product offers and suppliers for isolated integration-test setup. */
     @Transactional
     public void deleteAll() {
         productSupplierRepository.deleteAllInBatch();
@@ -140,6 +188,12 @@ public class SupplierService {
         productSupplierRepository.deleteAllInBatch();
     }
 
+    /**
+     * Returns trimmed details with null optional fields converted to empty strings.
+     *
+     * @param existingId supplier excluded from the name uniqueness check, or null for a new supplier
+     * @throws IllegalArgumentException if required contact details, name uniqueness, email format, or length limits fail
+     */
     private SupplierDetails validate(
             String name,
             String contactPerson,
@@ -188,6 +242,11 @@ public class SupplierService {
                 normalizedNotes);
     }
 
+    /**
+     * @return the trimmed supplier SKU
+     * @throws IllegalArgumentException if the SKU is blank or exceeds 100 characters after trimming, or lead time is not
+     *     positive
+     */
     private String validateOffer(String supplierSku, int leadTimeDays) {
         if (supplierSku == null || supplierSku.isBlank()) {
             throw new IllegalArgumentException("Supplier SKU is required.");
@@ -200,6 +259,12 @@ public class SupplierService {
         return normalizedSku;
     }
 
+    /**
+     * Saves and flushes a supplier, translating the case-insensitive name constraint into a validation error.
+     *
+     * @throws IllegalArgumentException if the case-insensitive name constraint is violated
+     * @throws DataIntegrityViolationException if another integrity constraint is violated
+     */
     private Supplier saveSupplier(Supplier supplier) {
         try {
             return supplierRepository.saveAndFlush(supplier);

@@ -37,7 +37,12 @@ public class ProductService {
         return productRepository.findAll(Sort.by(Sort.Order.asc("sku")));
     }
 
-    /** Loads only the requested products, rejecting missing entries with the usual not-found error. */
+    /**
+     * Loads the requested products keyed by identifier, collapsing duplicate identifiers.
+     *
+     * @return the matching products, or an empty map when no identifiers are requested
+     * @throws IllegalArgumentException if any requested product does not exist
+     */
     @Transactional(readOnly = true)
     public Map<Long, Product> findByIds(Collection<Long> productIds) {
         if (productIds.isEmpty()) {
@@ -71,6 +76,7 @@ public class ProductService {
 
     /**
      * Validates and creates a product with a unique, trimmed SKU.
+     * Publishes a {@link ProductCreated} event when the saved product has an identifier.
      *
      * @param sku stock keeping unit
      * @param name display name
@@ -81,6 +87,7 @@ public class ProductService {
      * @param initialStock nonnegative starting quantity
      * @return the saved product
      * @throws IllegalArgumentException if a value is invalid or the SKU is already in use
+     * @throws DataIntegrityViolationException if saving violates a constraint other than SKU uniqueness
      */
     @Transactional
     public Product save(
@@ -111,6 +118,7 @@ public class ProductService {
 
     /**
      * Validates and updates an existing product.
+     * Publishes a {@link ProductReorderLevelChanged} event only when the reorder threshold changes.
      *
      * @param id identifier of the product to update
      * @param sku stock keeping unit
@@ -119,9 +127,10 @@ public class ProductService {
      * @param description optional details
      * @param unitCost positive cost per unit
      * @param reorderLevel positive threshold no greater than initial stock
-     * @param initialStock nonnegative starting quantity
+     * @param initialStock nonnegative starting quantity stored in the catalog; does not change the current stock balance
      * @return the saved product
      * @throws IllegalArgumentException if the product is missing or a value is invalid
+     * @throws DataIntegrityViolationException if saving violates a constraint other than SKU uniqueness
      */
     @Transactional
     public Product update(
@@ -151,7 +160,10 @@ public class ProductService {
         return saved;
     }
 
-    /** Removes all products; used to reset the catalog between integration tests. */
+    /**
+     * Publishes a {@link ProductCatalogCleared} event to remove dependent records, then removes all products;
+     * used to reset the catalog between integration tests.
+     */
     @Transactional
     public void deleteAll() {
         eventPublisher.publish(new ProductCatalogCleared());

@@ -59,6 +59,7 @@ public class LowStockAlertDetailView extends VerticalLayout implements BeforeEnt
         add(layout);
     }
 
+    /** Loads alert details, rerouting invalid identifiers or missing related data to not found. */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String parameter = event.getRouteParameters().get("alertId").orElse(null);
@@ -94,6 +95,7 @@ public class LowStockAlertDetailView extends VerticalLayout implements BeforeEnt
                 alert.isAcknowledged() || alert.isResolved() ? "/alerts/history" : "/alerts", "Back to alerts"));
     }
 
+    /** Builds the offers grid in lead-time order, marking only the first offer as suggested. */
     private Grid<SupplierOfferRow> supplierGrid(Product product) {
         Grid<SupplierOfferRow> grid = new Grid<>(SupplierOfferRow.class, false);
         grid.addColumn(row -> row.supplier().getName()).setHeader("Supplier").setSortable(true);

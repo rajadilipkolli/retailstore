@@ -74,6 +74,7 @@ public class StockAdjustmentView extends VerticalLayout implements BeforeEnterOb
         return form;
     }
 
+    /** Loads the product and balance, rerouting missing or invalid product identifiers and missing balances to not found. */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         try {
@@ -90,6 +91,10 @@ public class StockAdjustmentView extends VerticalLayout implements BeforeEnterOb
         }
     }
 
+    /**
+     * Records a complete adjustment, updates the displayed balance, and clears quantity and reason on success.
+     * Shows incomplete input and service validation failures as notifications.
+     */
     private void submit() {
         if (productId == null || changeTypeField.isEmpty() || quantityField.isEmpty() || reasonField.isEmpty()) {
             Notification.show("Complete all adjustment fields.", 4000, Notification.Position.MIDDLE);

@@ -36,7 +36,13 @@ public class LowStockAlertService {
         this.supplierService = supplierService;
     }
 
-    /** Reconciles an alert in the transaction that changed the stock balance. */
+    /**
+     * Creates an alert at or below the product's current reorder level if no unresolved episode exists; otherwise
+     * preserves that episode, including its acknowledgment. Above the threshold, resolves the latest unresolved episode
+     * using the event time. Runs in the stock change transaction.
+     *
+     * @throws IllegalArgumentException if the event's product does not exist
+     */
     @EventListener
     @Transactional
     public void stockLevelChanged(StockLevelChanged event) {
@@ -68,13 +74,16 @@ public class LowStockAlertService {
         return alertRepository.findAllByAcknowledgedFalseAndResolvedAtIsNullOrderByAlertedAtDescIdDesc();
     }
 
-    /** @return all alert episodes, including acknowledged and resolved entries */
+    /** @return all alert episodes, including acknowledged and resolved entries, ordered by alert time and ID descending */
     @Transactional(readOnly = true)
     public List<LowStockAlert> history() {
         return alertRepository.findAllByOrderByAlertedAtDescIdDesc();
     }
 
-    /** @return supplier offers ordered by shortest lead time, then supplier identifier */
+    /**
+     * @return supplier offers ordered by shortest lead time, then supplier identifier; empty if no offers exist
+     * @throws IllegalArgumentException if the product does not exist
+     */
     @Transactional(readOnly = true)
     public List<ProductSupplier> supplierOptions(Long productId) {
         return supplierService.suppliersForProduct(productId).stream()
@@ -83,7 +92,11 @@ public class LowStockAlertService {
                 .toList();
     }
 
-    /** Loads one alert or reports a domain-level not-found error. */
+    /**
+     * Loads one alert.
+     *
+     * @throws IllegalArgumentException if the alert does not exist
+     */
     @Transactional(readOnly = true)
     public LowStockAlert findById(Long alertId) {
         return alertRepository
@@ -91,7 +104,15 @@ public class LowStockAlertService {
                 .orElseThrow(() -> new IllegalArgumentException("Alert not found: " + alertId));
     }
 
-    /** Marks an active alert reviewed without resolving it. */
+    /**
+     * Marks an unresolved alert reviewed without resolving it, including an alert already reviewed.
+     * Requires the ADMIN role.
+     *
+     * @return the saved alert
+     * @throws IllegalArgumentException if the alert is missing or resolved
+     * @throws org.springframework.security.access.AccessDeniedException if the caller lacks the ADMIN role
+     * @throws org.springframework.dao.OptimisticLockingFailureException if a concurrent change prevents saving the alert
+     */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public LowStockAlert acknowledge(Long alertId) {
@@ -103,7 +124,16 @@ public class LowStockAlertService {
         return alertRepository.save(alert);
     }
 
-    /** Reopens an acknowledged alert only while its product remains below or at reorder level. */
+    /**
+     * Clears acknowledgment of an unresolved alert while its product remains at or below reorder level.
+     * An already unacknowledged alert is also accepted. Requires the ADMIN role.
+     *
+     * @return the saved alert
+     * @throws IllegalArgumentException if the alert, product, or stock record is missing, the alert is resolved,
+     *     or current stock exceeds the reorder level
+     * @throws org.springframework.security.access.AccessDeniedException if the caller lacks the ADMIN role
+     * @throws org.springframework.dao.OptimisticLockingFailureException if a concurrent change prevents saving the alert
+     */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public LowStockAlert reopen(Long alertId) {

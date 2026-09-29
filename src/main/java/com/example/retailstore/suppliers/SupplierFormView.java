@@ -67,6 +67,10 @@ public class SupplierFormView extends VerticalLayout implements BeforeEnterObser
         add(layout);
     }
 
+    /**
+     * Selects creation mode when no supplier identifier is supplied; otherwise loads the supplier for editing.
+     * Reroutes invalid identifiers and missing suppliers to not found.
+     */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String parameter = event.getRouteParameters().get("supplierId").orElse(null);
@@ -89,6 +93,7 @@ public class SupplierFormView extends VerticalLayout implements BeforeEnterObser
         }
     }
 
+    /** Saves the current fields and navigates to supplier details, displaying validation failures as notifications. */
     private void save() {
         try {
             Supplier saved = supplierId == null

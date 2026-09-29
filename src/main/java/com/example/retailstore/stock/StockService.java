@@ -42,7 +42,12 @@ public class StockService {
         return stockRepository.findAllByOrderByProductIdAsc();
     }
 
-    /** Loads only the requested stocks, rejecting missing entries with the usual not-found error. */
+    /**
+     * Loads the requested balances keyed by product identifier, collapsing duplicate identifiers.
+     *
+     * @return the matching balances, or an empty map when no identifiers are requested
+     * @throws IllegalArgumentException if any requested product has no stock record
+     */
     @Transactional(readOnly = true)
     public Map<Long, Stock> findByProductIds(Collection<Long> productIds) {
         if (productIds.isEmpty()) {
@@ -60,7 +65,11 @@ public class StockService {
         return stocks;
     }
 
-    /** Loads a product's current balance. */
+    /**
+     * Loads a product's current balance.
+     *
+     * @throws IllegalArgumentException if the product has no stock record
+     */
     @Transactional(readOnly = true)
     public Stock findByProductId(Long productId) {
         return stockRepository
@@ -68,7 +77,7 @@ public class StockService {
                 .orElseThrow(() -> new IllegalArgumentException("Stock not found for product: " + productId));
     }
 
-    /** @return the immutable adjustment history, newest first */
+    /** @return adjustment history ordered by timestamp and identifier descending, or an empty list if none exists */
     @Transactional(readOnly = true)
     public List<StockHistory> history(Long productId) {
         return historyRepository.findAllByProductIdOrderByTimestampDescIdDesc(productId);
@@ -81,7 +90,10 @@ public class StockService {
         initialize(event.productId(), event.initialStock());
     }
 
-    /** Re-evaluates the existing balance when the catalog changes its reorder threshold. */
+    /**
+     * Publishes the unchanged balance to re-evaluate alerts after a reorder threshold change.
+     * Does nothing when the product has no stock record.
+     */
     @EventListener
     @Transactional
     public void productReorderLevelChanged(ProductReorderLevelChanged event) {
@@ -100,8 +112,15 @@ public class StockService {
 
     /**
      * Applies one adjustment and appends its history record within the same transaction.
+     * Publishes the updated balance for alert reconciliation. Requires the ADMIN role.
      *
-     * @throws IllegalArgumentException if the adjustment is invalid or would make stock negative
+     * @param changeType whether units are added ({@code IN}) or removed ({@code OUT})
+     * @param quantity positive number of units to move
+     * @param reason nonblank reason or reference, trimmed before storage and limited to 500 characters after trimming
+     * @return the updated balance
+     * @throws IllegalArgumentException if the stock record is missing, an input is invalid, or the resulting balance
+     *     is outside zero through {@link Integer#MAX_VALUE}
+     * @throws org.springframework.security.access.AccessDeniedException if the caller lacks the ADMIN role
      */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
@@ -141,7 +160,12 @@ public class StockService {
         return stock;
     }
 
-    /** Creates an initial balance once, leaving existing balances untouched. */
+    /**
+     * Creates an initial balance when none exists and publishes it for alert reconciliation, without an adjustment
+     * history entry. Leaves existing balances untouched.
+     *
+     * @throws IllegalArgumentException if the product identifier is null, or alert reconciliation cannot find the product
+     */
     @Transactional
     public void initialize(Long productId, int initialQuantity) {
         if (productId == null) {
@@ -154,7 +178,7 @@ public class StockService {
         }
     }
 
-    /** Removes stock records when catalog integration tests reset their products. */
+    /** Removes all adjustment history and stock balances when catalog integration tests reset their products. */
     @Transactional
     public void deleteAll() {
         historyRepository.deleteAllInBatch();

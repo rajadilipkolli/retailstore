@@ -92,6 +92,7 @@ public class LowStockAlertHistoryView extends VerticalLayout {
         applyDateFilter(alertedOnField.getValue());
     }
 
+    /** Filters loaded episodes by alert date in the system time zone; null restores all loaded episodes. */
     private void applyDateFilter(@Nullable LocalDate filterDate) {
         if (filterDate == null) {
             grid.setItems(historyRows);

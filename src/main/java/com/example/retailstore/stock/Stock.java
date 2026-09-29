@@ -51,7 +51,7 @@ public class Stock extends BaseEntity {
         return quantityOnHand;
     }
 
-    /** @return the time of the latest stock adjustment */
+    /** @return the time the balance was initialized or most recently adjusted */
     public Instant getLastUpdated() {
         return lastUpdated;
     }

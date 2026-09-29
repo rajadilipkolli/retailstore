@@ -78,6 +78,7 @@ public class SupplierProductsView extends VerticalLayout implements BeforeEnterO
         add(layout);
     }
 
+    /** Loads supplier offers, rerouting invalid identifiers or missing related data to not found. */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String parameter = event.getRouteParameters().get("supplierId").orElse(null);
@@ -103,6 +104,10 @@ public class SupplierProductsView extends VerticalLayout implements BeforeEnterO
         return remove;
     }
 
+    /**
+     * Adds or updates the selected product offer, clears SKU and lead time, and reloads offers on success.
+     * Displays incomplete input and service validation failures as notifications.
+     */
     private void addProduct() {
         if (supplierId == null || productField.isEmpty() || supplierSkuField.isEmpty() || leadTimeField.isEmpty()) {
             Notification.show("Complete all product association fields.", 4000, Notification.Position.MIDDLE);
