@@ -6,7 +6,10 @@ import com.example.retailstore.catalog.ProductReorderLevelChanged;
 import com.example.retailstore.shared.events.SpringEventPublisher;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -37,6 +40,24 @@ public class StockService {
     @Transactional(readOnly = true)
     public List<Stock> listAll() {
         return stockRepository.findAllByOrderByProductIdAsc();
+    }
+
+    /** Loads only the requested stocks, rejecting missing entries with the usual not-found error. */
+    @Transactional(readOnly = true)
+    public Map<Long, Stock> findByProductIds(Collection<Long> productIds) {
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Stock> stocks = new HashMap<>();
+        for (Stock stock : stockRepository.findAllByProductIdIn(productIds)) {
+            stocks.put(stock.getProductId(), stock);
+        }
+        for (Long productId : productIds) {
+            if (!stocks.containsKey(productId)) {
+                throw new IllegalArgumentException("Stock not found for product: " + productId);
+            }
+        }
+        return stocks;
     }
 
     /** Loads a product's current balance. */

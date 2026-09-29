@@ -18,6 +18,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -87,6 +88,9 @@ public class LowStockAlertActionView extends VerticalLayout implements BeforeEnt
                 alertService.acknowledge(alertId);
             }
             UI.getCurrent().navigate("alerts/" + alertId);
+        } catch (OptimisticLockingFailureException exception) {
+            Notification.show(
+                    "The alert was changed by another action. Please retry.", 4000, Notification.Position.MIDDLE);
         } catch (IllegalArgumentException exception) {
             Notification.show(exception.getMessage(), 4000, Notification.Position.MIDDLE);
         }

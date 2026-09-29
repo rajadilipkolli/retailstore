@@ -3,7 +3,11 @@ package com.example.retailstore.catalog;
 import com.example.retailstore.shared.events.SpringEventPublisher;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.hibernate.exception.ConstraintViolationException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -31,6 +35,24 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<Product> listAll() {
         return productRepository.findAll(Sort.by(Sort.Order.asc("sku")));
+    }
+
+    /** Loads only the requested products, rejecting missing entries with the usual not-found error. */
+    @Transactional(readOnly = true)
+    public Map<Long, Product> findByIds(Collection<Long> productIds) {
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Product> products = new HashMap<>();
+        for (Product product : productRepository.findAllById(productIds)) {
+            products.put(Objects.requireNonNull(product.getId()), product);
+        }
+        for (Long productId : productIds) {
+            if (!products.containsKey(productId)) {
+                throw new IllegalArgumentException("Product not found: " + productId);
+            }
+        }
+        return products;
     }
 
     /**

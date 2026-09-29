@@ -14,6 +14,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /** Public list of low-stock alerts waiting for review. */
@@ -68,12 +69,16 @@ public class LowStockAlertListView extends VerticalLayout {
     }
 
     private void refresh() {
-        List<AlertRow> rows = alertService.activeAlerts().stream()
-                .map(alert -> {
-                    Product product = productService.findById(alert.getProductId());
-                    Stock stock = stockService.findByProductId(alert.getProductId());
-                    return new AlertRow(alert, product, stock);
-                })
+        List<LowStockAlert> alerts = alertService.activeAlerts();
+        List<Long> productIds =
+                alerts.stream().map(LowStockAlert::getProductId).distinct().toList();
+        Map<Long, Product> products = productService.findByIds(productIds);
+        Map<Long, Stock> stocks = stockService.findByProductIds(productIds);
+        List<AlertRow> rows = alerts.stream()
+                .map(alert -> new AlertRow(
+                        alert,
+                        Objects.requireNonNull(products.get(alert.getProductId())),
+                        Objects.requireNonNull(stocks.get(alert.getProductId()))))
                 .toList();
         grid.setItems(rows);
     }

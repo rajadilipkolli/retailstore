@@ -17,6 +17,7 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -77,11 +78,16 @@ public class LowStockAlertHistoryView extends VerticalLayout {
     }
 
     private void refresh() {
-        historyRows = alertService.history().stream()
+        List<LowStockAlert> alerts = alertService.history();
+        List<Long> productIds =
+                alerts.stream().map(LowStockAlert::getProductId).distinct().toList();
+        Map<Long, Product> products = productService.findByIds(productIds);
+        Map<Long, Stock> stocks = stockService.findByProductIds(productIds);
+        historyRows = alerts.stream()
                 .map(alert -> new HistoryRow(
                         alert,
-                        productService.findById(alert.getProductId()),
-                        stockService.findByProductId(alert.getProductId())))
+                        Objects.requireNonNull(products.get(alert.getProductId())),
+                        Objects.requireNonNull(stocks.get(alert.getProductId()))))
                 .toList();
         applyDateFilter(alertedOnField.getValue());
     }
