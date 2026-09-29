@@ -1,8 +1,13 @@
 package com.example.retailstore.catalog;
 
+import com.example.retailstore.shared.events.SpringEventPublisher;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.hibernate.exception.ConstraintViolationException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -15,16 +20,44 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final SpringEventPublisher eventPublisher;
 
-    /** @param productRepository storage for catalog products */
-    public ProductService(ProductRepository productRepository) {
+    /**
+     * @param productRepository storage for catalog products
+     * @param eventPublisher notifies dependent modules when catalog data changes
+     */
+    public ProductService(ProductRepository productRepository, SpringEventPublisher eventPublisher) {
         this.productRepository = productRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /** @return all products ordered by stock keeping unit */
     @Transactional(readOnly = true)
     public List<Product> listAll() {
         return productRepository.findAll(Sort.by(Sort.Order.asc("sku")));
+    }
+
+    /**
+     * Loads the requested products keyed by identifier, collapsing duplicate identifiers.
+     *
+     * @return the matching products, or an empty map when no identifiers are requested
+     * @throws IllegalArgumentException if any requested product does not exist
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Product> findByIds(Collection<Long> productIds) {
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Product> products = new HashMap<>();
+        for (Product product : productRepository.findAllById(productIds)) {
+            products.put(Objects.requireNonNull(product.getId()), product);
+        }
+        for (Long productId : productIds) {
+            if (!products.containsKey(productId)) {
+                throw new IllegalArgumentException("Product not found: " + productId);
+            }
+        }
+        return products;
     }
 
     /**
@@ -43,6 +76,7 @@ public class ProductService {
 
     /**
      * Validates and creates a product with a unique, trimmed SKU.
+     * Publishes a {@link ProductCreated} event when the saved product has an identifier.
      *
      * @param sku stock keeping unit
      * @param name display name
@@ -53,6 +87,7 @@ public class ProductService {
      * @param initialStock nonnegative starting quantity
      * @return the saved product
      * @throws IllegalArgumentException if a value is invalid or the SKU is already in use
+     * @throws DataIntegrityViolationException if saving violates a constraint other than SKU uniqueness
      */
     @Transactional
     public Product save(
@@ -73,11 +108,17 @@ public class ProductService {
                 unitCost,
                 reorderLevel,
                 initialStock);
-        return saveProduct(product);
+        Product saved = saveProduct(product);
+        Long savedId = saved.getId();
+        if (savedId != null) {
+            eventPublisher.publish(new ProductCreated(savedId, initialStock));
+        }
+        return saved;
     }
 
     /**
      * Validates and updates an existing product.
+     * Publishes a {@link ProductReorderLevelChanged} event only when the reorder threshold changes.
      *
      * @param id identifier of the product to update
      * @param sku stock keeping unit
@@ -86,9 +127,10 @@ public class ProductService {
      * @param description optional details
      * @param unitCost positive cost per unit
      * @param reorderLevel positive threshold no greater than initial stock
-     * @param initialStock nonnegative starting quantity
+     * @param initialStock nonnegative starting quantity stored in the catalog; does not change the current stock balance
      * @return the saved product
      * @throws IllegalArgumentException if the product is missing or a value is invalid
+     * @throws DataIntegrityViolationException if saving violates a constraint other than SKU uniqueness
      */
     @Transactional
     public Product update(
@@ -101,6 +143,7 @@ public class ProductService {
             int reorderLevel,
             int initialStock) {
         Product product = findById(id);
+        int previousReorderLevel = product.getReorderLevel();
         validateProduct(sku, name, category, description, unitCost, reorderLevel, initialStock, id);
         String normalizedSku = normalizeSku(sku);
         product.setSku(normalizedSku);
@@ -110,12 +153,20 @@ public class ProductService {
         product.setUnitCost(unitCost);
         product.setReorderLevel(reorderLevel);
         product.setInitialStock(initialStock);
-        return saveProduct(product);
+        Product saved = saveProduct(product);
+        if (previousReorderLevel != reorderLevel) {
+            eventPublisher.publish(new ProductReorderLevelChanged(id));
+        }
+        return saved;
     }
 
-    /** Removes all products; used to reset the catalog between integration tests. */
+    /**
+     * Publishes a {@link ProductCatalogCleared} event to remove dependent records, then removes all products;
+     * used to reset the catalog between integration tests.
+     */
     @Transactional
     public void deleteAll() {
+        eventPublisher.publish(new ProductCatalogCleared());
         productRepository.deleteAll();
     }
 

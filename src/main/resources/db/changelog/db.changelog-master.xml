@@ -4,4 +4,7 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
     <include file="db/changelog/001-initial-schema.xml"/>
+    <include file="db/changelog/002-stock-tracking.xml"/>
+    <include file="db/changelog/003-suppliers.xml"/>
+    <include file="db/changelog/004-low-stock-alerts.xml"/>
 </databaseChangeLog>
