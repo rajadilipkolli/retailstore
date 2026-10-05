@@ -12,7 +12,7 @@
     "@types/node": "26.6.4",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vitejs/plugin-react": "6.1.1",
+    "@vitejs/plugin-react": "6.1.2",
     "magic-string": "1.4.3",
     "playwright": "^1.63.0",
     "rollup-plugin-brotli": "3.1.0",
