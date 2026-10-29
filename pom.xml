@@ -9,8 +9,7 @@
 
     <properties>
         <java.version>25</java.version>
-        <vaadin.version>25.3.3</vaadin.version>
-        <spring-modulith.version>2.1.1</spring-modulith.version>
+        <vaadin.version>25.3.3</vaa25.3.4</spring-modulith.version>
 
         <spotless.version>3.10.4</spotless.version>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
